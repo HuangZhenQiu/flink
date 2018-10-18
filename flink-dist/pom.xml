@@ -155,11 +155,12 @@ under the License.
 			<version>${project.version}</version>
 		</dependency>
 
-		<dependency>
+		<!-- Remove due to artifactory dependency issue. Can't load MapR libs from Vendor's repository -->
+		<!-- <dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-mapr-fs</artifactId>
 			<version>${project.version}</version>
-		</dependency>
+		</dependency> -->
 
 		<!-- Concrete logging framework - we add this only here (and not in the 
 			root POM) to not tie the projects to one specific framework and make
