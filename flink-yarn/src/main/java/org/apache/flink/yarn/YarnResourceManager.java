@@ -119,9 +119,6 @@ public class YarnResourceManager extends ResourceManager<YarnWorkerNode> impleme
 
 	private final int defaultCpus;
 
-	/** Number of failed TaskManager containers before stopping the application. -1 means infinite. */
-	private final int maxFailedContainers;
-
 	/** Client to communicate with the Resource Manager (YARN's master). */
 	private AMRMClientAsync<AMRMClient.ContainerRequest> resourceManagerClient;
 

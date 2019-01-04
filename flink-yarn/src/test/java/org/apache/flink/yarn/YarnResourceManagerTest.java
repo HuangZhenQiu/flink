@@ -504,7 +504,7 @@ public class YarnResourceManagerTest extends TestLogger {
 	}
 
 	/**
-	 * 	Tests that YarnResourceManager will trigger to cancel all pending slot request, when maximum number of failed
+	 * 	Tests that YarnResourceManager will trigger to reject all pending slot request, when maximum number of failed
 	 * 	contains is hit.
 	 */
 	@Test
