@@ -46,6 +46,7 @@ import org.apache.flink.runtime.resourcemanager.JobLeaderIdService;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerConfiguration;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
 import org.apache.flink.runtime.resourcemanager.SlotRequest;
+import org.apache.flink.runtime.resourcemanager.exceptions.MaximumFailedContainersException;
 import org.apache.flink.runtime.resourcemanager.slotmanager.SlotManager;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
@@ -74,6 +75,7 @@ import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -91,12 +93,14 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.apache.flink.yarn.YarnConfigKeys.ENV_APP_ID;
 import static org.apache.flink.yarn.YarnConfigKeys.ENV_CLIENT_HOME_DIR;
 import static org.apache.flink.yarn.YarnConfigKeys.ENV_CLIENT_SHIP_FILES;
 import static org.apache.flink.yarn.YarnConfigKeys.ENV_FLINK_CLASSPATH;
 import static org.apache.flink.yarn.YarnConfigKeys.ENV_HADOOP_USER_NAME;
+import static org.apache.flink.yarn.YarnConfigKeys.ENV_TM_COUNT;
 import static org.apache.flink.yarn.YarnConfigKeys.FLINK_JAR_PATH;
 import static org.apache.flink.yarn.YarnConfigKeys.FLINK_YARN_FILES;
 import static org.hamcrest.Matchers.instanceOf;
@@ -109,6 +113,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -141,6 +146,7 @@ public class YarnResourceManagerTest extends TestLogger {
 		env.put(ENV_FLINK_CLASSPATH, "");
 		env.put(ENV_HADOOP_USER_NAME, "foo");
 		env.put(FLINK_JAR_PATH, root.toURI().toString());
+		env.put(ENV_TM_COUNT, "1");
 	}
 
 	@After
@@ -215,7 +221,6 @@ public class YarnResourceManagerTest extends TestLogger {
 		protected void runAsync(final Runnable runnable) {
 			runnable.run();
 		}
-
 	}
 
 	class Context {
@@ -303,9 +308,9 @@ public class YarnResourceManagerTest extends TestLogger {
 				highAvailabilityServices.setResourceManagerLeaderElectionService(rmLeaderElectionService);
 				heartbeatServices = new TestingHeartbeatServices(5L, 5L, scheduledExecutor);
 				metricRegistry = NoOpMetricRegistry.INSTANCE;
-				slotManager = new SlotManager(
+				slotManager = spy(new SlotManager(
 						new ScheduledExecutorServiceAdapter(new DirectScheduledExecutorService()),
-						Time.seconds(10), Time.seconds(10), Time.minutes(1));
+						Time.seconds(10), Time.seconds(10), Time.minutes(1)));
 				jobLeaderIdService = new JobLeaderIdService(
 						highAvailabilityServices,
 						rpcService.getScheduledExecutor(),
@@ -496,5 +501,76 @@ public class YarnResourceManagerTest extends TestLogger {
 			resourceManager.onContainersCompleted(ImmutableList.of(testingContainerStatus));
 			verify(mockResourceManagerClient, times(2)).addContainerRequest(any(AMRMClient.ContainerRequest.class));
 		}};
+	}
+
+	/**
+	 * 	Tests that YarnResourceManager will trigger to cancel all pending slot request, when maximum number of failed
+	 * 	contains is hit.
+	 */
+	@Test
+	public void testOnContainersAllocatedWithFailure() throws Exception {
+		new Context() {{
+			CompletableFuture<?> registerSlotRequestFuture = resourceManager.runInMainThread(() -> {
+				rmServices.slotManager.registerSlotRequest(
+					new SlotRequest(new JobID(), new AllocationID(), resourceProfile1, taskHost));
+				return null;
+			});
+
+			// wait for the registerSlotRequest completion
+			registerSlotRequestFuture.get();
+
+			// Callback from YARN when container is allocated.
+			Container disconnectedContainer1 = mockContainer("container1", 1234, 1, resourceManager.getContainerResource());
+
+			doReturn(Collections.singletonList(Collections.singletonList(resourceManager.getContainerRequest())))
+				.when(mockResourceManagerClient).getMatchingRequests(any(Priority.class), anyString(), any(Resource.class));
+
+			resourceManager.onContainersAllocated(ImmutableList.of(disconnectedContainer1));
+			verify(mockResourceManagerClient).addContainerRequest(any(AMRMClient.ContainerRequest.class));
+			verify(mockNMClient).startContainer(eq(disconnectedContainer1), any(ContainerLaunchContext.class));
+
+			ResourceID connectedTM = new ResourceID(disconnectedContainer1.getId().toString());
+
+			resourceManager.registerTaskExecutor("container1", connectedTM, 1234,
+				hardwareDescription, Time.seconds(10L));
+
+			// force to unregister the task manager
+			resourceManager.disconnectTaskManager(connectedTM, new TimeoutException());
+
+			// request second slot
+			registerSlotRequestFuture = resourceManager.runInMainThread(() -> {
+				rmServices.slotManager.registerSlotRequest(
+					new SlotRequest(new JobID(), new AllocationID(), resourceProfile1, taskHost));
+				return null;
+			});
+
+			// wait for the registerSlotRequest completion
+			registerSlotRequestFuture.get();
+			Container failedContainer = mockContainer("container2", 2345, 2, resourceManager.getContainerResource());
+			when(mockNMClient.startContainer(eq(failedContainer), any())).thenThrow(new YarnException("Failed"));
+			resourceManager.onContainersAllocated(ImmutableList.of(failedContainer));
+			verify(rmServices.slotManager, times(1))
+				.rejectAllPendingSlotRequests(any(MaximumFailedContainersException.class));
+		}};
+	}
+
+	private static Container mockContainer(String host, int port, int containerId, Resource resource) {
+		Container mockContainer = mock(Container.class);
+
+		NodeId mockNodeId = NodeId.newInstance(host, port);
+		ContainerId mockContainerId = ContainerId.newInstance(
+			ApplicationAttemptId.newInstance(
+				ApplicationId.newInstance(System.currentTimeMillis(), 1),
+				1
+			),
+			containerId
+		);
+
+		when(mockContainer.getId()).thenReturn(mockContainerId);
+		when(mockContainer.getNodeId()).thenReturn(mockNodeId);
+		when(mockContainer.getResource()).thenReturn(resource);
+		when(mockContainer.getPriority()).thenReturn(Priority.UNDEFINED);
+
+		return mockContainer;
 	}
 }

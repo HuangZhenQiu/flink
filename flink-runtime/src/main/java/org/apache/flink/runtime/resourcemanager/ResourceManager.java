@@ -81,6 +81,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -145,6 +146,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
 	/** All registered listeners for status updates of the ResourceManager. */
 	private ConcurrentMap<String, InfoMessageListenerRpcGateway> infoMessageListeners;
+
+	/** The number of failed containers since the master became active. */
+	protected AtomicInteger failedContainerSoFar = new AtomicInteger(0);
 
 	/**
 	 * Represents asynchronous state clearing work.
@@ -622,6 +626,10 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 		}
 	}
 
+	protected void rejectAllPendingSlotRequests(Exception e) {
+		slotManager.rejectAllPendingSlotRequests(e);
+	}
+
 	// ------------------------------------------------------------------------
 	//  Internal methods
 	// ------------------------------------------------------------------------
@@ -823,6 +831,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 			slotManager.unregisterTaskManager(workerRegistration.getInstanceID());
 
 			workerRegistration.getTaskExecutorGateway().disconnectResourceManager(cause);
+			failedContainerSoFar.getAndAdd(1);
 		} else {
 			log.debug(
 				"No open TaskExecutor connection {}. Ignoring close TaskExecutor connection. Closing reason was: {}",
