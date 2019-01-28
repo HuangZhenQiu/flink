@@ -18,6 +18,7 @@
 
 package org.apache.flink.yarn.entrypoint;
 
+import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
@@ -46,6 +47,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Entry point for Yarn session clusters.
@@ -90,6 +92,9 @@ public class YarnSessionClusterEntrypoint extends SessionClusterEntrypoint {
 			highAvailabilityServices,
 			rpcService.getScheduledExecutor());
 
+		int maxFailurePerInternal = configuration.getInteger(YarnConfigOptions.MAX_FAILED_CONTAINERS_PER_INTERVAL);
+		long failureInterval = configuration.getInteger(YarnConfigOptions.CONTAINERS_FAILURE_RATE_INTERVAL);
+
 		return new YarnResourceManager(
 			rpcService,
 			ResourceManager.RESOURCE_MANAGER_NAME,
@@ -105,7 +110,9 @@ public class YarnSessionClusterEntrypoint extends SessionClusterEntrypoint {
 			clusterInformation,
 			fatalErrorHandler,
 			webInterfaceUrl,
-			jobManagerMetricGroup);
+			jobManagerMetricGroup,
+			Time.of(failureInterval, TimeUnit.SECONDS),
+			maxFailurePerInternal);
 	}
 
 	public static void main(String[] args) {

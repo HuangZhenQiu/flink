@@ -169,7 +169,6 @@ public class SlotManager implements AutoCloseable {
 	}
 
 	public int getNumberPendingSlotRequests() {return pendingSlotRequests.size(); }
-
 	// ---------------------------------------------------------------------------------------------
 	// Component lifecycle methods
 	// ---------------------------------------------------------------------------------------------
@@ -299,14 +298,13 @@ public class SlotManager implements AutoCloseable {
 		pendingSlotRequests.clear();
 	}
 
-
-		/**
-         * Cancels and removes a pending slot request with the given allocation id. If there is no such
-         * pending request, then nothing is done.
-         *
-         * @param allocationId identifying the pending slot request
-         * @return True if a pending slot request was found; otherwise false
-         */
+	/**
+	 * Cancels and removes a pending slot request with the given allocation id. If there is no such
+	 * pending request, then nothing is done.
+	 *
+	 * @param allocationId identifying the pending slot request
+	 * @return True if a pending slot request was found; otherwise false
+	 */
 	public boolean unregisterSlotRequest(AllocationID allocationId) {
 		checkInit();
 
