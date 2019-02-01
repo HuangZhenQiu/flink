@@ -18,7 +18,6 @@
 
 package org.apache.flink.mesos.runtime.clusterframework;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.mesos.runtime.clusterframework.services.MesosServices;
@@ -49,6 +48,7 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
+import org.apache.flink.runtime.failurerate.FailureRater;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.metrics.MetricRegistry;
@@ -56,7 +56,6 @@ import org.apache.flink.runtime.metrics.groups.JobManagerMetricGroup;
 import org.apache.flink.runtime.resourcemanager.JobLeaderIdService;
 import org.apache.flink.runtime.resourcemanager.ResourceManager;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerConfiguration;
-import org.apache.flink.runtime.resourcemanager.exceptions.MaximumFailedTaskManagerExceedingException;
 import org.apache.flink.runtime.resourcemanager.exceptions.ResourceManagerException;
 import org.apache.flink.runtime.resourcemanager.slotmanager.SlotManager;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
@@ -150,28 +149,27 @@ public class MesosResourceManager extends ResourceManager<RegisteredMesosWorkerN
 	private MesosConfiguration initializedMesosConfig;
 
 	public MesosResourceManager(
-			// base class
-			RpcService rpcService,
-			String resourceManagerEndpointId,
-			ResourceID resourceId,
-			ResourceManagerConfiguration resourceManagerConfiguration,
-			HighAvailabilityServices highAvailabilityServices,
-			HeartbeatServices heartbeatServices,
-			SlotManager slotManager,
-			MetricRegistry metricRegistry,
-			JobLeaderIdService jobLeaderIdService,
-			ClusterInformation clusterInformation,
-			FatalErrorHandler fatalErrorHandler,
-			// Mesos specifics
-			Configuration flinkConfig,
-			MesosServices mesosServices,
-			MesosConfiguration mesosConfig,
-			MesosTaskManagerParameters taskManagerParameters,
-			ContainerSpecification taskManagerContainerSpec,
-			@Nullable String webUiUrl,
-			JobManagerMetricGroup jobManagerMetricGroup,
-			Time failureInterval,
-			int maxFailurePerInterval) {
+
+		RpcService rpcService,
+		String resourceManagerEndpointId,
+		ResourceID resourceId,
+		ResourceManagerConfiguration resourceManagerConfiguration,
+		HighAvailabilityServices highAvailabilityServices,
+		HeartbeatServices heartbeatServices,
+		SlotManager slotManager,
+		MetricRegistry metricRegistry,
+		JobLeaderIdService jobLeaderIdService,
+		ClusterInformation clusterInformation,
+		FatalErrorHandler fatalErrorHandler,
+		// Mesos specifics
+		Configuration flinkConfig,
+		MesosServices mesosServices,
+		MesosConfiguration mesosConfig,
+		MesosTaskManagerParameters taskManagerParameters,
+		ContainerSpecification taskManagerContainerSpec,
+		@Nullable String webUiUrl,
+		JobManagerMetricGroup jobManagerMetricGroup,
+		FailureRater failureRater) {
 		super(
 			rpcService,
 			resourceManagerEndpointId,
@@ -185,8 +183,7 @@ public class MesosResourceManager extends ResourceManager<RegisteredMesosWorkerN
 			clusterInformation,
 			fatalErrorHandler,
 			jobManagerMetricGroup,
-			failureInterval,
-			maxFailurePerInterval);
+			failureRater);
 
 		this.mesosServices = Preconditions.checkNotNull(mesosServices);
 		this.actorSystem = Preconditions.checkNotNull(mesosServices.getLocalActorSystem());
@@ -665,14 +662,7 @@ public class MesosResourceManager extends ResourceManager<RegisteredMesosWorkerN
 			LOG.info("Worker {} failed with status: {}, reason: {}, message: {}.",
 				id, status.getState(), status.getReason(), status.getMessage());
 
-			recordFailure();
-
-			if (shouldRejectRequests()) {
-				rejectAllPendingSlotRequests(new MaximumFailedTaskManagerExceedingException(
-					new RuntimeException(String.format("Maximum number of failed workers %d in interval %s"
-							+ "is detected in Resource Manager", maximumFailureTaskExecutorPerInternal,
-						failureInterval.toString()))));
-			} else {
+			if (recordFailure()) {
 				startNewWorker(launched.profile());
 			}
 		}

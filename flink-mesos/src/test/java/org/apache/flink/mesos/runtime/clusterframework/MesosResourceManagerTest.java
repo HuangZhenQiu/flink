@@ -45,6 +45,8 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.concurrent.ScheduledExecutor;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
+import org.apache.flink.runtime.failurerate.FailureRater;
+import org.apache.flink.runtime.failurerate.TimestampBasedFailureRater;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.heartbeat.TestingHeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
@@ -180,8 +182,7 @@ public class MesosResourceManagerTest extends TestLogger {
 			MesosTaskManagerParameters taskManagerParameters,
 			ContainerSpecification taskManagerContainerSpec,
 			JobManagerMetricGroup jobManagerMetricGroup,
-			Time failureInterval,
-			int maxFailurePerInterval) {
+			FailureRater failureRater) {
 			super(
 				rpcService,
 				resourceManagerEndpointId,
@@ -201,8 +202,7 @@ public class MesosResourceManagerTest extends TestLogger {
 				taskManagerContainerSpec,
 				null,
 				jobManagerMetricGroup,
-				failureInterval,
-				maxFailurePerInterval);
+				failureRater);
 		}
 
 		<T> CompletableFuture<T> runInMainThread(Callable<T> callable) {
@@ -322,8 +322,7 @@ public class MesosResourceManagerTest extends TestLogger {
 					tmParams,
 					containerSpecification,
 					UnregisteredMetricGroups.createUnregisteredJobManagerMetricGroup(),
-					Time.of(300, TimeUnit.SECONDS),
-					2);
+					new TimestampBasedFailureRater(2, Time.of(1, TimeUnit.MINUTES)));
 
 			// TaskExecutors
 			task1Executor = mockTaskExecutor(task1);
@@ -728,9 +727,6 @@ public class MesosResourceManagerTest extends TestLogger {
 		}};
 	}
 
-	/**
-	 * Test worker failure hit maximum worker failure rate.
-	 */
 	@Test
 	public void testWorkerFailedAtFailureRate() throws Exception {
 		new Context() {{
@@ -795,7 +791,6 @@ public class MesosResourceManagerTest extends TestLogger {
 			verify(rmServices.workerStore).putWorker(worker1Released);
 			assertThat(resourceManager.workersInLaunch.entrySet(), empty());
 			assertThat(resourceManager.workersBeingReturned, hasEntry(extractResourceID(task1), worker1Released));
-
 			// verify that the monitor was notified
 			resourceManager.taskRouter.expectMsgClass(TaskMonitor.TaskGoalStateUpdated.class);
 			resourceManager.launchCoordinator.expectMsgClass(LaunchCoordinator.Unassign.class);

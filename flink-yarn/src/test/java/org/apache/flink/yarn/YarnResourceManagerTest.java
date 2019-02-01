@@ -30,6 +30,8 @@ import org.apache.flink.runtime.clusterframework.types.SlotID;
 import org.apache.flink.runtime.concurrent.ScheduledExecutor;
 import org.apache.flink.runtime.concurrent.ScheduledExecutorServiceAdapter;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
+import org.apache.flink.runtime.failurerate.FailureRater;
+import org.apache.flink.runtime.failurerate.TimestampBasedFailureRater;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.heartbeat.TestingHeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
@@ -58,7 +60,6 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutorRegistrationSuccess;
 import org.apache.flink.runtime.testutils.DirectScheduledExecutorService;
 import org.apache.flink.runtime.util.TestingFatalErrorHandler;
 import org.apache.flink.util.TestLogger;
-import org.apache.flink.yarn.configuration.YarnConfigOptions;
 
 import org.apache.flink.shaded.guava18.com.google.common.collect.ImmutableList;
 
@@ -134,8 +135,9 @@ public class YarnResourceManagerTest extends TestLogger {
 	@Before
 	public void setup() {
 		flinkConfig.setInteger(ResourceManagerOptions.CONTAINERIZED_HEAP_CUTOFF_MIN, 100);
-		flinkConfig.setInteger(YarnConfigOptions.MAX_FAILED_CONTAINERS_PER_INTERVAL, 1);
-	File root = folder.getRoot();
+		flinkConfig.setInteger(ResourceManagerOptions.MAXIMUM_WORKERS_FAILURE_RATE, 1);
+
+		File root = folder.getRoot();
 		File home = new File(root, "home");
 		boolean created = home.mkdir();
 		assertTrue(created);
@@ -157,26 +159,25 @@ public class YarnResourceManagerTest extends TestLogger {
 		public AMRMClientAsync<AMRMClient.ContainerRequest> mockResourceManagerClient;
 		public NMClient mockNMClient;
 
-		public TestingYarnResourceManager(
-				RpcService rpcService,
-				String resourceManagerEndpointId,
-				ResourceID resourceId,
-				Configuration flinkConfig,
-				Map<String, String> env,
-				ResourceManagerConfiguration resourceManagerConfiguration,
-				HighAvailabilityServices highAvailabilityServices,
-				HeartbeatServices heartbeatServices,
-				SlotManager slotManager,
-				MetricRegistry metricRegistry,
-				JobLeaderIdService jobLeaderIdService,
-				ClusterInformation clusterInformation,
-				FatalErrorHandler fatalErrorHandler,
-				@Nullable String webInterfaceUrl,
-				AMRMClientAsync<AMRMClient.ContainerRequest> mockResourceManagerClient,
-				NMClient mockNMClient,
-				JobManagerMetricGroup jobManagerMetricGroup,
-				Time failureInterval,
-				int maxFailurePerInterval) {
+		TestingYarnResourceManager(
+			RpcService rpcService,
+			String resourceManagerEndpointId,
+			ResourceID resourceId,
+			Configuration flinkConfig,
+			Map<String, String> env,
+			ResourceManagerConfiguration resourceManagerConfiguration,
+			HighAvailabilityServices highAvailabilityServices,
+			HeartbeatServices heartbeatServices,
+			SlotManager slotManager,
+			MetricRegistry metricRegistry,
+			JobLeaderIdService jobLeaderIdService,
+			ClusterInformation clusterInformation,
+			FatalErrorHandler fatalErrorHandler,
+			@Nullable String webInterfaceUrl,
+			AMRMClientAsync<AMRMClient.ContainerRequest> mockResourceManagerClient,
+			NMClient mockNMClient,
+			JobManagerMetricGroup jobManagerMetricGroup,
+			FailureRater failureRater) {
 			super(
 				rpcService,
 				resourceManagerEndpointId,
@@ -193,8 +194,7 @@ public class YarnResourceManagerTest extends TestLogger {
 				fatalErrorHandler,
 				webInterfaceUrl,
 				jobManagerMetricGroup,
-				failureInterval,
-				maxFailurePerInterval);
+				failureRater);
 			this.mockNMClient = mockNMClient;
 			this.mockResourceManagerClient = mockResourceManagerClient;
 		}
@@ -263,8 +263,7 @@ public class YarnResourceManagerTest extends TestLogger {
 			fatalErrorHandler = new TestingFatalErrorHandler();
 			rmServices = new MockResourceManagerRuntimeServices();
 
-			int maxFailurePerInternal = flinkConfig.getInteger(YarnConfigOptions.MAX_FAILED_CONTAINERS_PER_INTERVAL);
-			long failureInterval = flinkConfig.getInteger(YarnConfigOptions.CONTAINERS_FAILURE_RATE_INTERVAL);
+			int failureRate = flinkConfig.getInteger(ResourceManagerOptions.MAXIMUM_WORKERS_FAILURE_RATE);
 
 			// resource manager
 			rmConfiguration = new ResourceManagerConfiguration(
@@ -290,8 +289,8 @@ public class YarnResourceManagerTest extends TestLogger {
 							mockResourceManagerClient,
 							mockNMClient,
 							mockJMMetricGroup,
-							Time.of(failureInterval, TimeUnit.SECONDS),
-							maxFailurePerInternal);
+							new TimestampBasedFailureRater(failureRate, Time.of(1, TimeUnit.MINUTES))
+					);
 		}
 
 		/**

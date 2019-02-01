@@ -20,9 +20,11 @@ package org.apache.flink.yarn.entrypoint;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ResourceManagerOptions;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
 import org.apache.flink.runtime.entrypoint.SessionClusterEntrypoint;
+import org.apache.flink.runtime.failurerate.TimestampBasedFailureRater;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.metrics.MetricRegistry;
@@ -40,7 +42,6 @@ import org.apache.flink.runtime.util.SignalHandler;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.yarn.YarnResourceManager;
 import org.apache.flink.yarn.configuration.YarnConfigOptions;
-
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 
 import javax.annotation.Nullable;
@@ -92,8 +93,7 @@ public class YarnSessionClusterEntrypoint extends SessionClusterEntrypoint {
 			highAvailabilityServices,
 			rpcService.getScheduledExecutor());
 
-		int maxFailurePerInternal = configuration.getInteger(YarnConfigOptions.MAX_FAILED_CONTAINERS_PER_INTERVAL);
-		long failureInterval = configuration.getInteger(YarnConfigOptions.CONTAINERS_FAILURE_RATE_INTERVAL);
+		int failureRate = configuration.getInteger(ResourceManagerOptions.MAXIMUM_WORKERS_FAILURE_RATE);
 
 		return new YarnResourceManager(
 			rpcService,
@@ -111,8 +111,8 @@ public class YarnSessionClusterEntrypoint extends SessionClusterEntrypoint {
 			fatalErrorHandler,
 			webInterfaceUrl,
 			jobManagerMetricGroup,
-			Time.of(failureInterval, TimeUnit.SECONDS),
-			maxFailurePerInternal);
+			new TimestampBasedFailureRater(failureRate, Time.of(1, TimeUnit.MINUTES))
+		);
 	}
 
 	public static void main(String[] args) {

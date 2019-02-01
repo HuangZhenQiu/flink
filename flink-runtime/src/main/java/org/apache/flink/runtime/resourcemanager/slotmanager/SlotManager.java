@@ -168,7 +168,24 @@ public class SlotManager implements AutoCloseable {
 		}
 	}
 
+<<<<<<< HEAD
 	public int getNumberPendingSlotRequests() {return pendingSlotRequests.size(); }
+=======
+	public int getNumberPendingTaskManagerSlots() {
+		return pendingSlots.size();
+	}
+
+	@VisibleForTesting
+	public int getNumberPendingSlotRequest() {
+		return pendingSlotRequests.size();
+	}
+
+	@VisibleForTesting
+	int getNumberAssignedPendingTaskManagerSlots() {
+		return (int) pendingSlots.values().stream().filter(slot -> slot.getAssignedPendingSlotRequest() != null).count();
+	}
+
+>>>>>>> fix Till's comments
 	// ---------------------------------------------------------------------------------------------
 	// Component lifecycle methods
 	// ---------------------------------------------------------------------------------------------
