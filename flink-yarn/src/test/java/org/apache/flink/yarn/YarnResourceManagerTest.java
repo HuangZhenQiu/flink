@@ -49,7 +49,6 @@ import org.apache.flink.runtime.resourcemanager.ResourceManagerConfiguration;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
 import org.apache.flink.runtime.resourcemanager.SlotRequest;
 import org.apache.flink.runtime.resourcemanager.slotmanager.SlotManager;
-import org.apache.flink.runtime.resourcemanager.exceptions.MaximumFailedTaskManagerExceedingException;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.rpc.RpcService;
 import org.apache.flink.runtime.rpc.TestingRpcService;
@@ -517,6 +516,7 @@ public class YarnResourceManagerTest extends TestLogger {
 	@Test
 	public void testOnContainersAllocatedWithFailure() throws Exception {
 		new Context() {{
+			startResourceManager();
 			CompletableFuture<?> registerSlotRequestFuture = resourceManager.runInMainThread(() -> {
 				rmServices.slotManager.registerSlotRequest(
 					new SlotRequest(new JobID(), new AllocationID(), resourceProfile1, taskHost));
@@ -555,9 +555,13 @@ public class YarnResourceManagerTest extends TestLogger {
 			registerSlotRequestFuture.get();
 			Container failedContainer = mockContainer("container2", 2345, 2, resourceManager.getContainerResource());
 			when(mockNMClient.startContainer(eq(failedContainer), any())).thenThrow(new YarnException("Failed"));
-			resourceManager.onContainersAllocated(ImmutableList.of(failedContainer));
-			verify(rmServices.slotManager, times(1))
-				.rejectAllPendingSlotRequests(any(MaximumFailedTaskManagerExceedingException.class));
+			CompletableFuture<?> rejectAllPendingRequestFuture = resourceManager.runInMainThread(() -> {
+					resourceManager.onContainersAllocated(ImmutableList.of(failedContainer));
+					return null;
+			});
+
+			rejectAllPendingRequestFuture.get();
+			assertEquals(rmServices.slotManager.getNumberPendingSlotRequests(), 0);
 		}};
 	}
 

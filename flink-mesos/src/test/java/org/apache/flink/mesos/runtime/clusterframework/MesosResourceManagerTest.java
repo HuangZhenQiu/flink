@@ -764,7 +764,7 @@ public class MesosResourceManagerTest extends TestLogger {
 
 			// wait for the registerSlotRequest completion
 			registerSlotRequestFuture.get();
-			assertEquals(0, rmServices.slotManager.getNumberPendingSlotRequest());
+			assertEquals(0, rmServices.slotManager.getNumberPendingSlotRequests());
 		}};
 	}
 

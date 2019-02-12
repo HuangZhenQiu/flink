@@ -18,8 +18,10 @@
 
 package org.apache.flink.mesos.entrypoint;
 
+import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
+import org.apache.flink.configuration.ResourceManagerOptions;
 import org.apache.flink.mesos.runtime.clusterframework.MesosResourceManager;
 import org.apache.flink.mesos.runtime.clusterframework.MesosTaskManagerParameters;
 import org.apache.flink.mesos.runtime.clusterframework.services.MesosServices;
@@ -32,6 +34,7 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
 import org.apache.flink.runtime.entrypoint.JobClusterEntrypoint;
+import org.apache.flink.runtime.failurerate.TimestampBasedFailureRater;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -62,6 +65,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Entry point for Mesos per-job clusters.
@@ -134,6 +138,8 @@ public class MesosJobClusterEntrypoint extends JobClusterEntrypoint {
 			highAvailabilityServices,
 			rpcService.getScheduledExecutor());
 
+		int failureRate = configuration.getInteger(ResourceManagerOptions.MAXIMUM_WORKERS_FAILURE_RATE);
+
 		return new MesosResourceManager(
 			rpcService,
 			ResourceManager.RESOURCE_MANAGER_NAME,
@@ -152,7 +158,8 @@ public class MesosJobClusterEntrypoint extends JobClusterEntrypoint {
 			taskManagerParameters,
 			taskManagerContainerSpec,
 			webInterfaceUrl,
-			jobManagerMetricGroup);
+			jobManagerMetricGroup,
+			new TimestampBasedFailureRater(failureRate, Time.of(1, TimeUnit.MINUTES)));
 	}
 
 	@Override

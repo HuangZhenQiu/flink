@@ -30,6 +30,7 @@ import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerId;
 import org.apache.flink.runtime.resourcemanager.SlotRequest;
+import org.apache.flink.runtime.resourcemanager.exceptions.MaximumFailedTaskManagerExceedingException;
 import org.apache.flink.runtime.resourcemanager.exceptions.ResourceManagerException;
 import org.apache.flink.runtime.resourcemanager.registration.TaskExecutorConnection;
 import org.apache.flink.runtime.taskexecutor.SlotReport;
@@ -168,24 +169,7 @@ public class SlotManager implements AutoCloseable {
 		}
 	}
 
-<<<<<<< HEAD
 	public int getNumberPendingSlotRequests() {return pendingSlotRequests.size(); }
-=======
-	public int getNumberPendingTaskManagerSlots() {
-		return pendingSlots.size();
-	}
-
-	@VisibleForTesting
-	public int getNumberPendingSlotRequest() {
-		return pendingSlotRequests.size();
-	}
-
-	@VisibleForTesting
-	int getNumberAssignedPendingTaskManagerSlots() {
-		return (int) pendingSlots.values().stream().filter(slot -> slot.getAssignedPendingSlotRequest() != null).count();
-	}
-
->>>>>>> fix Till's comments
 	// ---------------------------------------------------------------------------------------------
 	// Component lifecycle methods
 	// ---------------------------------------------------------------------------------------------
@@ -310,6 +294,12 @@ public class SlotManager implements AutoCloseable {
 	public void rejectAllPendingSlotRequests(Exception cause) {
 		for (PendingSlotRequest pendingSlotRequest : pendingSlotRequests.values()) {
 			rejectPendingSlotRequest(pendingSlotRequest, cause);
+
+			// notify each job master about this pending request
+			resourceActions.notifyAllocationFailure(
+				pendingSlotRequest.getJobId(),
+				pendingSlotRequest.getAllocationId(),
+				cause);
 		}
 
 		pendingSlotRequests.clear();
@@ -898,7 +888,11 @@ public class SlotManager implements AutoCloseable {
 		CompletableFuture<Acknowledge> request = pendingSlotRequest.getRequestFuture();
 
 		if (null != request) {
-			request.completeExceptionally(new SlotAllocationException(cause));
+			if (cause instanceof MaximumFailedTaskManagerExceedingException) {
+				request.completeExceptionally(cause);
+			} else {
+				request.completeExceptionally(new SlotAllocationException(cause));
+			}
 		} else {
 			LOG.debug("Cannot reject pending slot request {}, since no request has been sent.", pendingSlotRequest.getAllocationId());
 		}

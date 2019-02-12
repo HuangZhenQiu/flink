@@ -678,9 +678,9 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 		if (failureRater.exceedMaximumFailureRate()) {
 			rejectAllPendingSlotRequests(new MaximumFailedTaskManagerExceedingException(
 				new RuntimeException(String.format("Maximum number of failed workers %d in interval %s"
-						+ "is detected in Resource Manager", failureRater.getMaximumFailureRate(),
+						+ " is detected in Resource Manager", failureRater.getMaximumFailureRate(),
 					failureRater.getFailureInterval().toString()))));
-
+			log.info("Rejected all pending slot rejects due to maximum number of failed workers is found.");
 			return false;
 		}
 
