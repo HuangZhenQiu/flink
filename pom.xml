@@ -15,8 +15,7 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-		 xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<parent>
 		<groupId>org.apache</groupId>
@@ -28,7 +27,7 @@ under the License.
 
 	<groupId>org.apache.flink</groupId>
 	<artifactId>flink-parent</artifactId>
-	<version>1.6-SNAPSHOT</version>
+	<version>1.6.3.uber.004</version>
 
 	<name>flink</name>
 	<packaging>pom</packaging>
@@ -46,7 +45,7 @@ under the License.
 	<scm>
 		<connection>scm:git:gitolite@code.uber.internal:data/flink</connection>
 		<developerConnection>scm:git:gitolite@code.uber.internal:data/flink</developerConnection>
-		<tag>HEAD</tag>
+		<tag>flink-parent-1.6.3.uber.004</tag>
 	</scm>
 
 	<modules>
@@ -143,7 +142,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>force-shading</artifactId>
-			<version>1.6-SNAPSHOT</version>
+			<version>1.6.3.uber.004</version>
 		</dependency>
 
 		<!-- Root dependencies for all projects -->
@@ -734,8 +733,7 @@ under the License.
 									<stylesheet>plain.xsl</stylesheet>
 
 									<fileMappers>
-										<fileMapper
-											implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+										<fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
 											<targetExtension>.html</targetExtension>
 										</fileMapper>
 									</fileMappers>
@@ -1281,7 +1279,7 @@ under the License.
 						</goals>
 						<configuration>
 							<rules>
-								<dependencyConvergence/>
+								<dependencyConvergence />
 							</rules>
 						</configuration>
 					</execution>
@@ -1346,7 +1344,7 @@ under the License.
 							</artifactSet>
 							<transformers combine.children="append">
 								<!-- The service transformer is needed to merge META-INF/services files -->
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 								<!-- The ApacheNoticeResourceTransformer collects and aggregates NOTICE files -->
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
 									<projectName>Apache Flink</projectName>
@@ -1468,7 +1466,7 @@ under the License.
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore/>
+										<ignore />
 									</action>
 								</pluginExecution>
 								<pluginExecution>
