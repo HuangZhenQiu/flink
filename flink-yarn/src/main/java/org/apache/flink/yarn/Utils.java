@@ -51,16 +51,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.flink.yarn.YarnConfigKeys.ENV_FLINK_CLASSPATH;
 
@@ -79,6 +82,12 @@ public final class Utils {
 
 	/** Yarn site xml file name populated in YARN container for secure IT run. */
 	public static final String YARN_SITE_FILE_NAME = "yarn-site.xml";
+
+	/** Number of retries to fetch the remote resources after uploaded in case of FileNotFoundException. */
+	public static final int REMOTE_RESOURCES_FETCH_NUM_RETRY = 3;
+
+	/** Time to wait in milliseconds between each remote resources fetch in case of FileNotFoundException. */
+	public static final int REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI = 100;
 
 	/**
 	 * See documentation.
@@ -167,8 +176,34 @@ public final class Utils {
 		//       location because this and the size of the resource will be checked by YARN based on
 		//       the values we provide to #registerLocalResource() below.
 		fs.setTimes(dst, localFile.lastModified(), -1);
+
+		// ----------------------------------- Modified -----------------------------------
+		// There is no way to override the last modified time for S3 FileSystem.
+		// So we read the last modified time from S3 after and overwrite the local resource modification time.
+		FileStatus[] fss = null;
+		int retry = 0;
+		while (retry <= REMOTE_RESOURCES_FETCH_NUM_RETRY) {
+			try {
+				fss = fs.listStatus(dst);
+			} catch (FileNotFoundException e) {
+				retry++;
+				try {
+					TimeUnit.MILLISECONDS.sleep(REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI);
+				} catch (InterruptedException ie) {
+					LOG.warn("Failed to sleep for {}ms at retry num {} while retrying fetching uploaded remote resources",
+						REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI, retry, ie);
+				}
+			}
+		}
+		long dstModificationTime = -1;
+		if (fss != null && fss.length >  0) {
+			dstModificationTime = fss[0].getModificationTime();
+		}
+		LOG.debug("Got modification time {} from remote path {} at time {}", dstModificationTime, dst, Instant.now().toEpochMilli());
+
 		// now create the resource instance
-		LocalResource resource = registerLocalResource(dst, localFile.length(), localFile.lastModified());
+		LocalResource resource = registerLocalResource(dst, localFile.length(), dstModificationTime > 0 ? dstModificationTime
+			: localFile.lastModified());
 
 		return Tuple2.of(dst, resource);
 	}
