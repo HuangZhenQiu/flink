@@ -83,7 +83,7 @@ public final class Utils {
 	/** Yarn site xml file name populated in YARN container for secure IT run. */
 	public static final String YARN_SITE_FILE_NAME = "yarn-site.xml";
 
-	/** Number of retries to fetch the remote resources after uploaded in case of FileNotFoundException. */
+	/** Number of total retries to fetch the remote resources after uploaded in case of FileNotFoundException. */
 	public static final int REMOTE_RESOURCES_FETCH_NUM_RETRY = 3;
 
 	/** Time to wait in milliseconds between each remote resources fetch in case of FileNotFoundException. */
@@ -181,18 +181,21 @@ public final class Utils {
 		// There is no way to override the last modified time for S3 FileSystem.
 		// So we read the last modified time from S3 after and overwrite the local resource modification time.
 		FileStatus[] fss = null;
-		int retry = 0;
-		while (retry <= REMOTE_RESOURCES_FETCH_NUM_RETRY) {
+		int iter = 1;
+		while (iter <= REMOTE_RESOURCES_FETCH_NUM_RETRY) {
 			try {
 				fss = fs.listStatus(dst);
+				break;
 			} catch (FileNotFoundException e) {
-				retry++;
+				LOG.debug("Got FileNotFoundException while fetching uploaded remote resources at retry num {}", iter);
 				try {
+					LOG.debug("Sleeping for {}ms", REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI);
 					TimeUnit.MILLISECONDS.sleep(REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI);
 				} catch (InterruptedException ie) {
-					LOG.warn("Failed to sleep for {}ms at retry num {} while retrying fetching uploaded remote resources",
-						REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI, retry, ie);
+					LOG.warn("Failed to sleep for {}ms at retry num {} while fetching uploaded remote resources",
+						REMOTE_RESOURCES_FETCH_WAIT_IN_MILLI, iter, ie);
 				}
+				iter++;
 			}
 		}
 		long dstModificationTime = -1;
