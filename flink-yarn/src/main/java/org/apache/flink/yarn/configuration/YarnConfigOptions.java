@@ -109,6 +109,14 @@ public class YarnConfigOptions {
 		.withDescription("Time between heartbeats with the ResourceManager in seconds.");
 
 	/**
+	 * The heartbeat interval between the Application Master and the YARN Resource Manager.
+	 */
+	public static final ConfigOption<Integer> FAST_HEARTBEAT_DELAY_MILLISECONDS =
+		key("yarn.fast-heartbeat-delay")
+			.defaultValue(500)
+			.withDescription("Time between heartbeats with the ResourceManager in milliseconds during container acquirement.");
+
+	/**
 	 * When a Flink job is submitted to YARN, the JobManager's host and the number of available
 	 * processing slots is written into a properties file, so that the Flink client is able
 	 * to pick those details up.

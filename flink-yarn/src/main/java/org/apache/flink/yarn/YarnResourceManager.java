@@ -88,10 +88,6 @@ public class YarnResourceManager extends ResourceManager<YarnWorkerNode> impleme
 
 	/** YARN container map. Package private for unit test purposes. */
 	private final ConcurrentMap<ResourceID, YarnWorkerNode> workerNodeMap;
-
-	/** The heartbeat interval while the resource master is waiting for containers. */
-	private static final int FAST_YARN_HEARTBEAT_INTERVAL_MS = 500;
-
 	/** Environment variable name of the final container id used by the YarnResourceManager.
 	 * Container ID generation may vary across Hadoop versions. */
 	private static final String ENV_FLINK_CONTAINER_ID = "_FLINK_CONTAINER_ID";
@@ -127,6 +123,9 @@ public class YarnResourceManager extends ResourceManager<YarnWorkerNode> impleme
 
 	/** The number of containers requested, but not yet granted. */
 	private int numPendingContainerRequests;
+
+	/** The heartbeat interval while the resource master is waiting for containers. */
+	private int fastYarnHeartbeatIntervalMillis;
 
 	private final Map<ResourceProfile, Integer> resourcePriorities = new HashMap<>();
 
@@ -181,6 +180,7 @@ public class YarnResourceManager extends ResourceManager<YarnWorkerNode> impleme
 		}
 
 		yarnHeartbeatIntervalMillis = yarnHeartbeatIntervalMS;
+		fastYarnHeartbeatIntervalMillis = flinkConfig.getInteger(YarnConfigOptions.FAST_HEARTBEAT_DELAY_MILLISECONDS);
 		numPendingContainerRequests = 0;
 
 		this.webInterfaceUrl = webInterfaceUrl;
@@ -515,7 +515,7 @@ public class YarnResourceManager extends ResourceManager<YarnWorkerNode> impleme
 			resourceManagerClient.addContainerRequest(getContainerRequest());
 
 			// make sure we transmit the request fast and receive fast news of granted allocations
-			resourceManagerClient.setHeartbeatInterval(FAST_YARN_HEARTBEAT_INTERVAL_MS);
+			resourceManagerClient.setHeartbeatInterval(fastYarnHeartbeatIntervalMillis);
 
 			numPendingContainerRequests++;
 
