@@ -23,7 +23,7 @@ under the License.
 	<parent>
 		<artifactId>flink-examples-build-helper</artifactId>
 		<groupId>org.apache.flink</groupId>
-		<version>1.6.3.uber.006</version>
+		<version>1.6.3.uber.007-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 

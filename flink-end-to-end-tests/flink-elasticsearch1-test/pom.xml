@@ -24,7 +24,7 @@ under the License.
 	<parent>
 		<groupId>org.apache.flink</groupId>
 		<artifactId>flink-end-to-end-tests</artifactId>
-		<version>1.6.3.uber.006</version>
+		<version>1.6.3.uber.007-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 
