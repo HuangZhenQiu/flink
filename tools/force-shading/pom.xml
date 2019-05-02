@@ -37,7 +37,7 @@ under the License.
 
 	<groupId>org.apache.flink</groupId>
 	<artifactId>force-shading</artifactId>
-	<version>1.6.3.uber.006-SNAPSHOT</version>
+	<version>1.6.3.uber.006</version>
 
 	<packaging>jar</packaging>
 
@@ -104,4 +104,8 @@ under the License.
 			</build>
 		</profile>
 	</profiles>
+
+  <scm>
+    <tag>flink-parent-1.6.3.uber.006</tag>
+  </scm>
 </project>

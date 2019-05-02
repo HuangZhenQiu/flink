@@ -27,7 +27,7 @@ under the License.
 
 	<groupId>org.apache.flink</groupId>
 	<artifactId>flink-parent</artifactId>
-	<version>1.6.3.uber.006-SNAPSHOT</version>
+	<version>1.6.3.uber.006</version>
 
 	<name>flink</name>
 	<packaging>pom</packaging>
@@ -45,7 +45,7 @@ under the License.
 	<scm>
 		<connection>scm:git:gitolite@code.uber.internal:data/flink</connection>
 		<developerConnection>scm:git:gitolite@code.uber.internal:data/flink</developerConnection>
-		<tag>HEAD</tag>
+		<tag>flink-parent-1.6.3.uber.006</tag>
 	</scm>
 
 	<modules>
@@ -142,7 +142,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>force-shading</artifactId>
-			<version>1.6.3.uber.006-SNAPSHOT</version>
+			<version>1.6.3.uber.006</version>
 		</dependency>
 
 		<!-- Root dependencies for all projects -->
