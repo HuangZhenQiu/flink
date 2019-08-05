@@ -19,6 +19,7 @@
 package org.apache.flink.client.deployment;
 
 import org.apache.flink.client.program.ClusterClient;
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.util.FlinkException;
 
@@ -64,6 +65,22 @@ public interface ClusterDescriptor<T> extends AutoCloseable {
 	ClusterClient<T> deployJobCluster(
 		final ClusterSpecification clusterSpecification,
 		final JobGraph jobGraph,
+		final boolean detached) throws ClusterDeploymentException;
+
+	/**
+	 * Deploys a per-job cluster with the given job on the cluster with the delayed job graph generation
+	 *
+	 * @param clusterSpecification Initial cluster specification with which the Flink cluster is launched
+	 * @param ProgramMetadata programMetadata with which the job cluster is started
+	 * @param detached true if the cluster should be stopped after the job completion without serving the result,
+	 * 	               otherwise false
+	 *
+	 * @return Cluster client to talk to the Flink cluster
+	 * @throws ClusterDeploymentException if the cluster could not be deployed
+	 */
+	ClusterClient<T> deployJobCluster(
+		final ClusterSpecification clusterSpecification,
+		final ProgramMetadata programMetadata,
 		final boolean detached) throws ClusterDeploymentException;
 
 	/**

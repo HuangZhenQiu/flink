@@ -181,6 +181,19 @@ public class YarnConfigOptions {
 			" allowed ports.");
 
 	/**
+	 * With this configuration option, users can specify whether the job graph is generated in session
+	 * client side or in the yarn application master side in per job cluster. By default, we use the original
+	 * pattern that job graph is generated and set as local context for starting application master.
+	 *
+	 */
+	public static final ConfigOption<Boolean> DELAYED_JOBGRPAH_GENERATION =
+		key("yarn.delayed-jobgraph-generation")
+		.defaultValue(Boolean.FALSE)
+		.withDescription("With this configuration option, users can specify whether the job graph is generated in session"
+			+ " client side or in the yarn application master side in per job cluster. By default, we use the original"
+			+ " pattern that job graph is generated and set as local context for starting application master.");
+
+	/**
 	 * A comma-separated list of strings to use as YARN application tags.
 	 */
 	public static final ConfigOption<String> APPLICATION_TAGS =

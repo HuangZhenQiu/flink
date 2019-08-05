@@ -24,6 +24,7 @@ import org.apache.flink.client.deployment.ClusterSpecification;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.TestLogger;
 
@@ -155,6 +156,11 @@ public class AbstractYarnClusterTest extends TestLogger {
 
 		@Override
 		public ClusterClient<ApplicationId> deployJobCluster(ClusterSpecification clusterSpecification, JobGraph jobGraph, boolean detached) throws ClusterDeploymentException {
+			throw new UnsupportedOperationException("Not needed for testing");
+		}
+
+		@Override
+		public ClusterClient<ApplicationId> deployJobCluster(ClusterSpecification clusterSpecification, ProgramMetadata programMetadata, boolean detached) throws ClusterDeploymentException {
 			throw new UnsupportedOperationException("Not needed for testing");
 		}
 	}

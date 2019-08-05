@@ -21,6 +21,7 @@ package org.apache.flink.client.cli.util;
 import org.apache.flink.client.deployment.ClusterDescriptor;
 import org.apache.flink.client.deployment.ClusterSpecification;
 import org.apache.flink.client.program.ClusterClient;
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
@@ -56,6 +57,14 @@ public class DummyClusterDescriptor<T> implements ClusterDescriptor<T> {
 			ClusterSpecification clusterSpecification,
 			JobGraph jobGraph,
 			boolean detached) {
+		return clusterClient;
+	}
+
+	@Override
+	public ClusterClient<T> deployJobCluster(
+		ClusterSpecification clusterSpecification,
+		ProgramMetadata programMetadata,
+		boolean detached) {
 		return clusterClient;
 	}
 

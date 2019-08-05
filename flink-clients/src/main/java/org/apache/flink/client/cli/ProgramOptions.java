@@ -29,18 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.flink.client.cli.CliFrontendParser.ARGS_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.CLASSPATH_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.CLASS_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.DETACHED_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.JAR_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.LOGGING_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.PARALLELISM_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.PYFILES_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.PYMODULE_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.PY_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.SHUTDOWN_IF_ATTACHED_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.YARN_DETACHED_OPTION;
+import static org.apache.flink.client.cli.CliFrontendParser.*;
 
 /**
  * Base class for command line options that refer to a JAR file program.
@@ -60,6 +49,8 @@ public abstract class ProgramOptions extends CommandLineOptions {
 	private final boolean stdoutLogging;
 
 	private final boolean detachedMode;
+
+	private final boolean delayMode;
 
 	private final boolean shutdownOnAttachedExit;
 
@@ -174,6 +165,7 @@ public abstract class ProgramOptions extends CommandLineOptions {
 		stdoutLogging = !line.hasOption(LOGGING_OPTION.getOpt());
 		detachedMode = line.hasOption(DETACHED_OPTION.getOpt()) || line.hasOption(
 			YARN_DETACHED_OPTION.getOpt());
+		delayMode = line.hasOption(DELAYED_JOB_GRAPH_GENERATION_OPTION.getOpt());
 		shutdownOnAttachedExit = line.hasOption(SHUTDOWN_IF_ATTACHED_OPTION.getOpt());
 
 		this.savepointSettings = CliFrontendParser.createSavepointRestoreSettings(line);
@@ -205,6 +197,10 @@ public abstract class ProgramOptions extends CommandLineOptions {
 
 	public boolean getDetachedMode() {
 		return detachedMode;
+	}
+
+	public boolean getDelayMode() {
+		return delayMode;
 	}
 
 	public boolean isShutdownOnAttachedExit() {

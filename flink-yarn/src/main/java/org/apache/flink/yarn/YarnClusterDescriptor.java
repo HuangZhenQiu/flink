@@ -21,6 +21,7 @@ package org.apache.flink.yarn;
 import org.apache.flink.client.deployment.ClusterDeploymentException;
 import org.apache.flink.client.deployment.ClusterSpecification;
 import org.apache.flink.client.program.ClusterClient;
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.client.program.rest.RestClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -77,6 +78,24 @@ public class YarnClusterDescriptor extends AbstractYarnClusterDescriptor {
 				"Flink per-job cluster",
 				getYarnJobClusterEntrypoint(),
 				jobGraph,
+				detached);
+		} catch (Exception e) {
+			throw new ClusterDeploymentException("Could not deploy Yarn job cluster.", e);
+		}
+	}
+
+	@Override
+	public ClusterClient<ApplicationId> deployJobCluster(
+		ClusterSpecification clusterSpecification,
+		ProgramMetadata programMetadata,
+		boolean detached) throws ClusterDeploymentException {
+
+		try {
+			return deployInternal(
+				clusterSpecification,
+				programMetadata,
+				"Flink per-job cluster",
+				getYarnJobClusterEntrypoint(),
 				detached);
 		} catch (Exception e) {
 			throw new ClusterDeploymentException("Could not deploy Yarn job cluster.", e);

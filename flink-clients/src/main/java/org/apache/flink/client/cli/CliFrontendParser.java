@@ -63,6 +63,9 @@ public class CliFrontendParser {
 	public static final Option DETACHED_OPTION = new Option("d", "detached", false, "If present, runs " +
 			"the job in detached mode");
 
+	public static final Option DELAYED_JOB_GRAPH_GENERATION_OPTION = new Option("djg", "delayedJobGraphGeneration", false, "If present, " +
+			"job graph generation will be in application master");
+
 	public static final Option SHUTDOWN_IF_ATTACHED_OPTION = new Option(
 		"sae", "shutdownOnAttachedExit", false,
 		"If the job is submitted in attached mode, perform a best-effort cluster shutdown " +

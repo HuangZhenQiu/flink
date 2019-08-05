@@ -52,6 +52,7 @@ import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.messages.Acknowledge;
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.runtime.security.SecurityConfiguration;
 import org.apache.flink.runtime.security.SecurityUtils;
 import org.apache.flink.runtime.util.EnvironmentInformation;
@@ -224,15 +225,25 @@ public class CliFrontend {
 			if (clusterId == null && runOptions.getDetachedMode()) {
 				int parallelism = runOptions.getParallelism() == -1 ? defaultParallelism : runOptions.getParallelism();
 
-				final JobGraph jobGraph = PackagedProgramUtils.createJobGraph(program, configuration, parallelism);
-
 				final ClusterSpecification clusterSpecification = customCommandLine.getClusterSpecification(commandLine);
-				client = clusterDescriptor.deployJobCluster(
-					clusterSpecification,
-					jobGraph,
-					runOptions.getDetachedMode());
 
-				logAndSysout("Job has been submitted with JobID " + jobGraph.getJobID());
+				if (runOptions.getDelayMode()) {
+					ProgramMetadata metadata = new ProgramMetadata(
+						program.getMainClassName(), program.getArguments(), program.getSavepointSettings() ,parallelism);
+
+					client = clusterDescriptor.deployJobCluster(
+						clusterSpecification,
+						metadata,
+						runOptions.getDetachedMode());
+				} else {
+					final JobGraph jobGraph = PackagedProgramUtils.createJobGraph(program, configuration, parallelism);
+
+					client = clusterDescriptor.deployJobCluster(
+						clusterSpecification,
+						jobGraph,
+						runOptions.getDetachedMode());
+					logAndSysout("Job has been submitted with JobID " + jobGraph.getJobID());
+				}
 
 				try {
 					client.shutdown();

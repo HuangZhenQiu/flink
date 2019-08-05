@@ -57,7 +57,7 @@ under the License.
 		</dependency>
 
 		<!-- The Hadoop FS support has only an optional dependency on Hadoop and
-			gracefully handles absence of Hadoop classes -->
+			gracefully handles absence of HadStandaloneJobClusterEntryPointoop classes -->
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>

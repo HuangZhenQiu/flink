@@ -18,17 +18,24 @@
 
 package org.apache.flink.yarn.entrypoint;
 
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.entrypoint.ClusterEntrypoint;
-import org.apache.flink.runtime.entrypoint.JobClusterEntrypoint;
+import org.apache.flink.runtime.entrypoint.ClusterEntrypointException;
+import org.apache.flink.runtime.entrypoint.component.DelegatedJobGraphRetriever;
 import org.apache.flink.runtime.entrypoint.component.DispatcherResourceManagerComponentFactory;
 import org.apache.flink.runtime.entrypoint.component.FileJobGraphRetriever;
 import org.apache.flink.runtime.entrypoint.component.JobDispatcherResourceManagerComponentFactory;
+import org.apache.flink.runtime.entrypoint.component.JobGraphRetrieveDelegator;
+
+import org.apache.flink.runtime.program.ProgramMetadata;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.entrypoint.ClusterEntrypoint;
+import org.apache.flink.runtime.entrypoint.JobClusterEntrypoint;
 import org.apache.flink.runtime.security.SecurityContext;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.runtime.util.JvmShutdownSafeguard;
 import org.apache.flink.runtime.util.SignalHandler;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.StringUtils;
 import org.apache.flink.yarn.configuration.YarnConfigOptions;
 
 import org.apache.hadoop.yarn.api.ApplicationConstants;
@@ -42,6 +49,9 @@ import java.util.Map;
 public class YarnJobClusterEntrypoint extends JobClusterEntrypoint {
 
 	private final String workingDirectory;
+
+	private final ObjectMapper mapper = new ObjectMapper();
+
 
 	public YarnJobClusterEntrypoint(
 			Configuration configuration,
@@ -63,9 +73,34 @@ public class YarnJobClusterEntrypoint extends JobClusterEntrypoint {
 
 	@Override
 	protected DispatcherResourceManagerComponentFactory<?> createDispatcherResourceManagerComponentFactory(Configuration configuration) {
-		return new JobDispatcherResourceManagerComponentFactory(
-			YarnResourceManagerFactory.INSTANCE,
-			FileJobGraphRetriever.createFrom(configuration));
+
+		boolean delayed = configuration.getBoolean(YarnConfigOptions.DELAYED_JOBGRPAH_GENERATION, false);
+		if (delayed) {
+			String metaDataString = configuration.getString("programMetaData", "");
+			if (!StringUtils.isNullOrWhitespaceOnly(metaDataString)) {
+				try {
+					ProgramMetadata metadata = mapper.readValue(metaDataString, ProgramMetadata.class);
+					String className = "org.apache.flink.client.program.ProgramJobGraphRetrieveDelegator";
+					Class<? extends JobGraphRetrieveDelegator> delegatorClass =
+						Class.forName(className).asSubclass(JobGraphRetrieveDelegator.class);
+					JobGraphRetrieveDelegator delegator = delegatorClass.newInstance();
+
+					return new JobDispatcherResourceManagerComponentFactory(
+						YarnResourceManagerFactory.INSTANCE,
+						new DelegatedJobGraphRetriever(delegator, metadata));
+				} catch (Exception e) {
+					throw new RuntimeException(new ClusterEntrypointException(e));
+				}
+			} else {
+				throw new RuntimeException("Start YarnPerJobCluster with delayed job graph generation needs program metaData."
+					+ " Missing programMetaData in Flink configuration.");
+			}
+
+		} else {
+			return new JobDispatcherResourceManagerComponentFactory(
+				YarnResourceManagerFactory.INSTANCE,
+				FileJobGraphRetriever.createFrom(configuration));
+		}
 	}
 
 	// ------------------------------------------------------------------------

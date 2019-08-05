@@ -18,6 +18,7 @@
 
 package org.apache.flink.client.deployment;
 
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.client.program.rest.RestClusterClient;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
@@ -62,6 +63,14 @@ public class StandaloneClusterDescriptor implements ClusterDescriptor<Standalone
 			ClusterSpecification clusterSpecification,
 			JobGraph jobGraph,
 			boolean detached) {
+		throw new UnsupportedOperationException("Can't deploy a standalone per-job cluster.");
+	}
+
+	@Override
+	public RestClusterClient<StandaloneClusterId> deployJobCluster(
+		ClusterSpecification clusterSpecification,
+		ProgramMetadata programMetadata,
+		boolean detached) {
 		throw new UnsupportedOperationException("Can't deploy a standalone per-job cluster.");
 	}
 

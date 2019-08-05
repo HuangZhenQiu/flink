@@ -24,6 +24,7 @@ import org.apache.flink.client.deployment.ClusterDescriptor;
 import org.apache.flink.client.deployment.ClusterRetrieveException;
 import org.apache.flink.client.deployment.ClusterSpecification;
 import org.apache.flink.client.program.ClusterClient;
+import org.apache.flink.runtime.program.ProgramMetadata;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
@@ -41,6 +42,7 @@ import org.apache.flink.runtime.entrypoint.ClusterEntrypoint;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobmanager.HighAvailabilityMode;
 import org.apache.flink.runtime.taskexecutor.TaskManagerServices;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.ShutdownHookUtil;
@@ -112,6 +114,8 @@ import static org.apache.flink.yarn.cli.FlinkYarnSessionCli.getDynamicProperties
  */
 public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractYarnClusterDescriptor.class);
+
+	private final ObjectMapper mapper = new ObjectMapper();
 
 	private final YarnConfiguration yarnConfiguration;
 
@@ -420,6 +424,16 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	protected ClusterClient<ApplicationId> deployInternal(
+		ClusterSpecification clusterSpecification,
+		ProgramMetadata programMetadata,
+		String applicationName,
+		String yarnClusterEntrypoint,
+		boolean detached) throws Exception {
+		setProgramMetadataConfiguration(programMetadata);
+		return deployInternal(clusterSpecification, applicationName, yarnClusterEntrypoint, null, detached);
+	}
+
 	/**
 	 * This method will block until the ApplicationMaster/JobManager have been deployed on YARN.
 	 *
@@ -616,6 +630,11 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			.setSlotsPerTaskManager(clusterSpecification.getSlotsPerTaskManager())
 			.createClusterSpecification();
 
+	}
+
+	private void setProgramMetadataConfiguration(ProgramMetadata programMetadata) throws Exception {
+		flinkConfiguration.setBoolean(YarnConfigOptions.DELAYED_JOBGRPAH_GENERATION, true);
+		flinkConfiguration.setString("programMetadata", mapper.writeValueAsString(programMetadata));
 	}
 
 	private void checkYarnQueues(YarnClient yarnClient) {
