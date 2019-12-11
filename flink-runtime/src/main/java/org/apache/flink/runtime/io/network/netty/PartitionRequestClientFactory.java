@@ -188,7 +188,7 @@ class PartitionRequestClientFactory {
 		private PartitionRequestClient waitForChannel() throws IOException, InterruptedException {
 			synchronized (connectLock) {
 				while (error == null && partitionRequestClient == null) {
-					connectLock.wait(2000);
+					connectLock.wait(10000);
 				}
 			}
 
