@@ -31,19 +31,19 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import static org.apache.flink.client.cli.CliFrontendParser.ARGS_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.CLASSPATH_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.CLASS_OPTION;
+import static org.apache.flink.client.cli.CliFrontendParser.CLASSPATH_OPTION;
+import static org.apache.flink.client.cli.CliFrontendParser.CLUSTER_MODE_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.DETACHED_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.JAR_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.PARALLELISM_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.PYARCHIVE_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.PYEXEC_OPTION;
+import static org.apache.flink.client.cli.CliFrontendParser.PY_OPTION;
+import static org.apache.flink.client.cli.CliFrontendParser.PYARCHIVE_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.PYFILES_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.PYMODULE_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.PYREQUIREMENTS_OPTION;
-import static org.apache.flink.client.cli.CliFrontendParser.PY_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.SHUTDOWN_IF_ATTACHED_OPTION;
 import static org.apache.flink.client.cli.CliFrontendParser.YARN_DETACHED_OPTION;
 
@@ -73,6 +73,11 @@ public class ProgramOptions extends CommandLineOptions {
 	 */
 	private final boolean isPython;
 
+	/**
+	 * Flag indicating whether deploy the job in cluster mode.
+	 */
+	private final boolean isClusterMode;
+
 	public ProgramOptions(CommandLine line) throws CliArgsException {
 		super(line);
 
@@ -85,6 +90,9 @@ public class ProgramOptions extends CommandLineOptions {
 
 		isPython = line.hasOption(PY_OPTION.getOpt()) | line.hasOption(PYMODULE_OPTION.getOpt())
 			| "org.apache.flink.client.python.PythonGatewayServer".equals(entryPointClass);
+
+		this.isClusterMode = line.hasOption(CLUSTER_MODE_OPTION.getOpt());
+
 		if (isPython) {
 			// copy python related parameters to program args and place them in front of user parameters
 			List<String> pyArgList = new ArrayList<>();
@@ -189,5 +197,12 @@ public class ProgramOptions extends CommandLineOptions {
 	 */
 	public boolean isPython() {
 		return isPython;
+	}
+
+	/**
+	 * Indicate whether deploy job in cluster mode.
+	 */
+	public boolean isClusterMode() {
+		return isClusterMode;
 	}
 }

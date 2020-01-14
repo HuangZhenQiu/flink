@@ -16,27 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.entrypoint;
+package org.apache.flink.yarn.deployers;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.concurrent.ScheduledExecutor;
-import org.apache.flink.runtime.dispatcher.ArchivedExecutionGraphStore;
-import org.apache.flink.runtime.dispatcher.MemoryArchivedExecutionGraphStore;
+import org.apache.flink.configuration.DeploymentOptions;
+import org.apache.flink.core.deployment.ClusterModeDeployer;
+import org.apache.flink.core.deployment.ClusterModeDeployerFactory;
 
 /**
- * Base class for per-job cluster entry points.
+ * An {@link ClusterModeDeployerFactory} for deploy a job on dedicated (per-job) clusters with cluster mode.
  */
-public abstract class JobClusterEntrypoint extends ClusterEntrypoint {
-	protected static final String CLUSTER_DEPLOYMENT_TARGET = "cluster";
+@Internal
+public class YarnJobClusterDeployerFactory implements ClusterModeDeployerFactory {
 
-	public JobClusterEntrypoint(Configuration configuration) {
-		super(configuration);
+	@Override
+	public boolean isCompatibleWith(Configuration configuration) {
+		return YarnJobClusterDeployer.NAME.equals(configuration.get(DeploymentOptions.TARGET));
 	}
 
 	@Override
-	protected ArchivedExecutionGraphStore createSerializableExecutionGraphStore(
-			Configuration configuration,
-			ScheduledExecutor scheduledExecutor) {
-		return new MemoryArchivedExecutionGraphStore();
+	public ClusterModeDeployer getClusterModeDeployer(Configuration configuration) {
+		return new YarnJobClusterDeployer();
 	}
 }

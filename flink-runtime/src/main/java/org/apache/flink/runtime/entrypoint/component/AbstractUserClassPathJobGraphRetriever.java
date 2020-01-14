@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.entrypoint.component;
 
+import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.util.FileUtils;
 import org.apache.flink.util.function.FunctionUtils;
 
@@ -28,8 +29,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -57,5 +60,15 @@ public abstract class AbstractUserClassPathJobGraphRetriever implements JobGraph
 
 	protected Collection<URL> getUserClassPaths() {
 		return userClassPaths;
+	}
+
+	protected void addUserClassPathsToJobGraph(JobGraph jobGraph) {
+		final List<URL> classPaths = new ArrayList<>();
+
+		if (jobGraph.getClasspaths() != null) {
+			classPaths.addAll(jobGraph.getClasspaths());
+		}
+		classPaths.addAll(getUserClassPaths());
+		jobGraph.setClasspaths(classPaths);
 	}
 }

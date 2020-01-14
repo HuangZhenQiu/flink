@@ -16,27 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.entrypoint;
+package org.apache.flink.core.deployment;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.concurrent.ScheduledExecutor;
-import org.apache.flink.runtime.dispatcher.ArchivedExecutionGraphStore;
-import org.apache.flink.runtime.dispatcher.MemoryArchivedExecutionGraphStore;
 
 /**
- * Base class for per-job cluster entry points.
+ * An interface used to discover the appropriate {@link ClusterModeDeployerFactory cluster mode deployer factory}
+ * based on the provided {@link Configuration}.
  */
-public abstract class JobClusterEntrypoint extends ClusterEntrypoint {
-	protected static final String CLUSTER_DEPLOYMENT_TARGET = "cluster";
+@Internal
+public interface ClusterModeDeployerServiceLoader {
 
-	public JobClusterEntrypoint(Configuration configuration) {
-		super(configuration);
-	}
-
-	@Override
-	protected ArchivedExecutionGraphStore createSerializableExecutionGraphStore(
-			Configuration configuration,
-			ScheduledExecutor scheduledExecutor) {
-		return new MemoryArchivedExecutionGraphStore();
-	}
+	/**
+	 * 	Loads the {@link ClusterModeDeployerFactory} which is compatible with the provided configuration.
+	 * 	There can be at most one compatible factory among the available ones, otherwise an exception
+	 * 	will be thrown.
+	 *
+	 * @param configuration flink configuration
+	 * @return if there is more than one compatible factories, or something went wrong when
+     *  	   loading the registered factories.
+	 */
+	ClusterModeDeployerFactory getClusterModeDeployerFactory(final Configuration configuration) throws Exception;
 }

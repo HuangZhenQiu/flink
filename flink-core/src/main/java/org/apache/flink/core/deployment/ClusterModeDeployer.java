@@ -16,27 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.entrypoint;
+package org.apache.flink.core.deployment;
 
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.concurrent.ScheduledExecutor;
-import org.apache.flink.runtime.dispatcher.ArchivedExecutionGraphStore;
-import org.apache.flink.runtime.dispatcher.MemoryArchivedExecutionGraphStore;
+import org.apache.flink.core.execution.JobClient;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Base class for per-job cluster entry points.
+ * Deployer interface for cluster mode deployment.
  */
-public abstract class JobClusterEntrypoint extends ClusterEntrypoint {
-	protected static final String CLUSTER_DEPLOYMENT_TARGET = "cluster";
+public interface ClusterModeDeployer {
 
-	public JobClusterEntrypoint(Configuration configuration) {
-		super(configuration);
-	}
+	CompletableFuture<JobClient> deploy(final Configuration configuration) throws Exception;
 
-	@Override
-	protected ArchivedExecutionGraphStore createSerializableExecutionGraphStore(
-			Configuration configuration,
-			ScheduledExecutor scheduledExecutor) {
-		return new MemoryArchivedExecutionGraphStore();
-	}
 }

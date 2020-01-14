@@ -19,10 +19,13 @@
 package org.apache.flink.yarn.entrypoint;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.runtime.entrypoint.ClusterEntrypoint;
 import org.apache.flink.runtime.entrypoint.JobClusterEntrypoint;
 import org.apache.flink.runtime.entrypoint.component.DefaultDispatcherResourceManagerComponentFactory;
 import org.apache.flink.runtime.entrypoint.component.FileJobGraphRetriever;
+import org.apache.flink.runtime.entrypoint.component.JobGraphRetriever;
+import org.apache.flink.runtime.entrypoint.component.ProgramJobGraphRetriever;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.runtime.util.JvmShutdownSafeguard;
 import org.apache.flink.runtime.util.SignalHandler;
@@ -57,9 +60,11 @@ public class YarnJobClusterEntrypoint extends JobClusterEntrypoint {
 
 	@Override
 	protected DefaultDispatcherResourceManagerComponentFactory createDispatcherResourceManagerComponentFactory(Configuration configuration) throws IOException {
+		JobGraphRetriever retriever = configuration.getString(DeploymentOptions.TARGET).equals(CLUSTER_DEPLOYMENT_TARGET) ?
+			new ProgramJobGraphRetriever(getUsrLibDir(configuration)) :
+			FileJobGraphRetriever.createFrom(configuration, getUsrLibDir(configuration));
 		return DefaultDispatcherResourceManagerComponentFactory.createJobComponentFactory(
-			YarnResourceManagerFactory.getInstance(),
-			FileJobGraphRetriever.createFrom(configuration, getUsrLibDir(configuration)));
+			YarnResourceManagerFactory.getInstance(), retriever);
 	}
 
 	@Nullable

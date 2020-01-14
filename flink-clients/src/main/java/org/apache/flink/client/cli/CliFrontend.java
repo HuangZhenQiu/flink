@@ -35,12 +35,18 @@ import org.apache.flink.client.program.PackagedProgramUtils;
 import org.apache.flink.client.program.ProgramInvocationException;
 import org.apache.flink.client.program.ProgramMissingJobException;
 import org.apache.flink.client.program.ProgramParametrizationException;
+import org.apache.flink.configuration.ClusterModeOptions;
 import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.ConfigUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.configuration.RestOptions;
+import org.apache.flink.core.deployment.ClusterModeDeployer;
+import org.apache.flink.core.deployment.ClusterModeDeployerFactory;
+import org.apache.flink.core.deployment.ClusterModeDeployerServiceLoader;
+import org.apache.flink.core.deployment.DefaultDeployerServiceLoader;
 import org.apache.flink.core.execution.DefaultExecutorServiceLoader;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.plugin.PluginUtils;
@@ -113,19 +119,24 @@ public class CliFrontend {
 
 	private final ClusterClientServiceLoader clusterClientServiceLoader;
 
+	private final ClusterModeDeployerServiceLoader deployerServiceLoader;
+
 	public CliFrontend(
 			Configuration configuration,
 			List<CustomCommandLine> customCommandLines) {
-		this(configuration, new DefaultClusterClientServiceLoader(), customCommandLines);
+		this(configuration, new DefaultClusterClientServiceLoader(),
+			DefaultDeployerServiceLoader.INSTANCE, customCommandLines);
 	}
 
 	public CliFrontend(
 			Configuration configuration,
 			ClusterClientServiceLoader clusterClientServiceLoader,
+			ClusterModeDeployerServiceLoader clusterModeDeployerServiceLoader,
 			List<CustomCommandLine> customCommandLines) {
 		this.configuration = checkNotNull(configuration);
 		this.customCommandLines = checkNotNull(customCommandLines);
 		this.clusterClientServiceLoader = checkNotNull(clusterClientServiceLoader);
+		this.deployerServiceLoader = checkNotNull(clusterModeDeployerServiceLoader);
 
 		FileSystem.initialize(configuration, PluginUtils.createPluginManagerFromRootFolder(configuration));
 
@@ -192,6 +203,11 @@ public class CliFrontend {
 			if (programOptions.getJarFilePath() == null) {
 				throw new CliArgsException("Java program should be specified a JAR file.");
 			}
+		}
+
+		if (programOptions.isClusterMode()) {
+			deployClusterModeJob(configuration, programOptions);
+			return;
 		}
 
 		final PackagedProgram program;
@@ -662,6 +678,17 @@ public class CliFrontend {
 
 	protected void executeProgram(final Configuration configuration, final PackagedProgram program) throws ProgramInvocationException {
 		ClientUtils.executeProgram(DefaultExecutorServiceLoader.INSTANCE, configuration, program);
+	}
+
+	protected void deployClusterModeJob(final Configuration configuration, final ProgramOptions programOptions) throws Exception{
+
+		configuration.setBoolean(ClusterModeOptions.ENABLE, true);
+		configuration.setString(ClusterModeOptions.MAIN_CLASS, programOptions.getEntryPointClassName());
+		ConfigUtils.encodeArrayToConfig(configuration, ClusterModeOptions.PROGRAM_ARGS,
+			programOptions.getProgramArgs(), (String arg) -> { return arg; });
+		ClusterModeDeployerFactory factory = deployerServiceLoader.getClusterModeDeployerFactory(configuration);
+		ClusterModeDeployer deployer = factory.getClusterModeDeployer(configuration);
+		deployer.deploy(configuration);
 	}
 
 	/**
