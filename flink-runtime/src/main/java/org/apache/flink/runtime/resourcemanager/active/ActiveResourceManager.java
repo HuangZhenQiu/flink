@@ -21,6 +21,8 @@ package org.apache.flink.runtime.resourcemanager.active;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.execution.ThresholdExceedException;
+import org.apache.flink.runtime.failurerate.ThresholdMeter;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.clusterframework.ApplicationStatus;
 import org.apache.flink.runtime.clusterframework.TaskExecutorProcessSpec;
@@ -33,6 +35,7 @@ import org.apache.flink.runtime.entrypoint.ClusterInformation;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.io.network.partition.ResourceManagerPartitionTrackerFactory;
+import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.ResourceManagerMetricGroup;
 import org.apache.flink.runtime.resourcemanager.JobLeaderIdService;
 import org.apache.flink.runtime.resourcemanager.ResourceManager;
@@ -45,6 +48,7 @@ import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +58,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.flink.util.Preconditions.checkNotNull;
+
 /**
  * An active implementation of {@link ResourceManager}.
  *
@@ -62,6 +68,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 		extends ResourceManager<WorkerType> implements ResourceEventHandler<WorkerType> {
+
+	private Time workerCreationRetryInterval;
 
 	protected final Configuration flinkConfig;
 
@@ -76,6 +84,14 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 	/** Identifiers and worker resource spec of requested not registered workers. */
 	private final Map<ResourceID, WorkerResourceSpec> currentAttemptUnregisteredWorkers;
 
+	private final ThresholdMeter failureRater;
+
+	/**
+	 * Incompletion of this future indicates that there was a worker creation failure recently and the resource manager
+	 * should not retry creating worker until the future become completed again. It's guaranteed to be modified in main thread.
+	 */
+	private CompletableFuture<Void> workerCreationCoolDown;
+
 	public ActiveResourceManager(
 			ResourceManagerDriver<WorkerType> resourceManagerDriver,
 			Configuration flinkConfig,
@@ -89,6 +105,8 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 			ClusterInformation clusterInformation,
 			FatalErrorHandler fatalErrorHandler,
 			ResourceManagerMetricGroup resourceManagerMetricGroup,
+			ThresholdMeter failureRater,
+			Duration retryInterval,
 			Executor ioExecutor) {
 		super(
 				rpcService,
@@ -109,6 +127,9 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 		this.workerNodeMap = new HashMap<>();
 		this.pendingWorkerCounter = new PendingWorkerCounter();
 		this.currentAttemptUnregisteredWorkers = new HashMap<>();
+		this.failureRater = checkNotNull(failureRater);
+		this.workerCreationRetryInterval = Time.of(retryInterval.toMillis(), TimeUnit.MILLISECONDS);
+		this.workerCreationCoolDown = FutureUtils.completedVoidFuture();
 	}
 
 	// ------------------------------------------------------------------------
@@ -195,6 +216,14 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 		}
 	}
 
+	@Override
+	protected void registerTaskExecutorMetrics() {
+		super.registerTaskExecutorMetrics();
+		resourceManagerMetricGroup.meter(
+			MetricNames.WORKER_FAILURE_RATE,
+			failureRater);
+	}
+
 	// ------------------------------------------------------------------------
 	//  ResourceEventListener
 	// ------------------------------------------------------------------------
@@ -214,9 +243,28 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 	public void onWorkerTerminated(ResourceID resourceId, String diagnostics) {
 		if (clearStateForWorker(resourceId)) {
 			log.info("Worker {} is terminated. Diagnostics: {}", resourceId.getStringWithMetadata(), diagnostics);
-			requestWorkerIfRequired();
+			recordWorkerFailureAndPauseWorkerCreationIfNeeded();
 		}
 		closeTaskManagerConnection(resourceId, new Exception(diagnostics));
+	}
+
+	/**
+	 * Record failure number of worker in ResourceManagers. If maximum failure rate is detected,
+	 * then cancel all pending requests.
+	 *
+	 * @return whether should acquire new container/worker after the a stop interval
+	 */
+	public boolean recordWorkerFailure() {
+		failureRater.markEvent();
+
+		try {
+			failureRater.checkAgainstThreshold();
+		} catch (ThresholdExceedException e) {
+			log.warn(e.getMessage());
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -237,7 +285,11 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 				workerResourceSpec,
 				pendingCount);
 
-		CompletableFuture<WorkerType> requestResourceFuture = resourceManagerDriver.requestResource(taskExecutorProcessSpec);
+		// In case of worker creation failures, we should wait for an interval before trying to create new workers.
+		// Otherwise, ActiveResourceManager will always re-requesting the worker, which keeps the main thread busy.
+		final CompletableFuture<WorkerType> requestResourceFuture =
+			workerCreationCoolDown.thenCompose((ignore) -> resourceManagerDriver.requestResource(taskExecutorProcessSpec));
+
 		FutureUtils.assertNoException(
 				requestResourceFuture.handle((worker, exception) -> {
 					if (exception != null) {
@@ -246,7 +298,7 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 								workerResourceSpec,
 								count,
 								exception);
-						requestWorkerIfRequired();
+						recordWorkerFailureAndPauseWorkerCreationIfNeeded();
 					} else {
 						final ResourceID resourceId = worker.getResourceID();
 						workerNodeMap.put(resourceId, worker);
@@ -257,6 +309,16 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 					}
 					return null;
 				}));
+	}
+
+	private void tryResetWorkerCreationCoolDown() {
+		if (workerCreationCoolDown.isDone()) {
+			log.info("Reaching max start worker failure rate. Will not retry creating worker in {}.", workerCreationRetryInterval);
+			workerCreationCoolDown = new CompletableFuture<>();
+			getMainThreadExecutor().scheduleRunAsync(
+				() -> workerCreationCoolDown.complete(null),
+				workerCreationRetryInterval.getSize());
+		}
 	}
 
 	/**
@@ -284,7 +346,12 @@ public class ActiveResourceManager<WorkerType extends ResourceIDRetrievable>
 		return true;
 	}
 
-	private void requestWorkerIfRequired() {
+	private void recordWorkerFailureAndPauseWorkerCreationIfNeeded() {
+		if (recordWorkerFailure()) {
+			// if exceed failure rate try to slow down
+			tryResetWorkerCreationCoolDown();
+		}
+
 		for (Map.Entry<WorkerResourceSpec, Integer> entry : getRequiredResources().entrySet()) {
 			final WorkerResourceSpec workerResourceSpec = entry.getKey();
 			final int requiredCount = entry.getValue();

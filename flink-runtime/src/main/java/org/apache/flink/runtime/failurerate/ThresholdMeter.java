@@ -16,19 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.flink.kubernetes.configuration;
+package org.apache.flink.runtime.failurerate;
+
+import org.apache.flink.metrics.Meter;
+import org.apache.flink.runtime.execution.ThresholdExceedException;
 
 /**
- * Configuration specific to {@link org.apache.flink.kubernetes.KubernetesResourceManagerDriver}.
+ * Metric for measuring rate with Threshold.
  */
-public class KubernetesResourceManagerDriverConfiguration {
-	private final String clusterId;
+public interface ThresholdMeter extends Meter {
 
-	public KubernetesResourceManagerDriverConfiguration(String clusterId) {
-		this.clusterId = clusterId;
-	}
-
-	public String getClusterId() {
-		return clusterId;
-	}
+	/**
+	 * Check whether the current rate of events exceed threshold.
+	 * If yes, throw ThresholdExceedException.
+	 *
+	 * @throws ThresholdExceedException
+	 */
+	void checkAgainstThreshold() throws ThresholdExceedException;
 }

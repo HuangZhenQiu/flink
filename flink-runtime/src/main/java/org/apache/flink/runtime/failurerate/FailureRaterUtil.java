@@ -16,19 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.flink.kubernetes.configuration;
+package org.apache.flink.runtime.failurerate;
+
+import org.apache.flink.api.common.time.Time;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ResourceManagerOptions;
+import org.apache.flink.util.Preconditions;
 
 /**
- * Configuration specific to {@link org.apache.flink.kubernetes.KubernetesResourceManagerDriver}.
+ * Failure rate util.
  */
-public class KubernetesResourceManagerDriverConfiguration {
-	private final String clusterId;
+public class FailureRaterUtil {
 
-	public KubernetesResourceManagerDriverConfiguration(String clusterId) {
-		this.clusterId = clusterId;
-	}
-
-	public String getClusterId() {
-		return clusterId;
+	public static TimestampBasedFailureRater createFailureRater(
+		Configuration configuration) {
+		double rate = configuration.getDouble(ResourceManagerOptions.MAXIMUM_WORKERS_FAILURE_RATE);
+		Preconditions.checkArgument(rate > 0, "Failure rate should be larger than 0");
+		return new TimestampBasedFailureRater(rate, Time.minutes(1));
 	}
 }

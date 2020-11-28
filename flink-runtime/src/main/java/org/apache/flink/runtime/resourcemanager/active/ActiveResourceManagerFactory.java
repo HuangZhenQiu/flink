@@ -19,11 +19,14 @@
 package org.apache.flink.runtime.resourcemanager.active;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ResourceManagerOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
+import org.apache.flink.runtime.failurerate.ThresholdMeter;
 import org.apache.flink.runtime.clusterframework.TaskExecutorProcessUtils;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceIDRetrievable;
 import org.apache.flink.runtime.entrypoint.ClusterInformation;
+import org.apache.flink.runtime.failurerate.FailureRaterUtil;
 import org.apache.flink.runtime.heartbeat.HeartbeatServices;
 import org.apache.flink.runtime.highavailability.HighAvailabilityServices;
 import org.apache.flink.runtime.io.network.partition.ResourceManagerPartitionTrackerImpl;
@@ -37,6 +40,7 @@ import org.apache.flink.runtime.rpc.RpcService;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.concurrent.Executor;
 
 /**
@@ -94,6 +98,8 @@ public abstract class ActiveResourceManagerFactory<WorkerType extends ResourceID
 			ResourceManagerRuntimeServices resourceManagerRuntimeServices,
 			Executor ioExecutor) throws Exception {
 
+		final ThresholdMeter failureRater = FailureRaterUtil.createFailureRater(configuration);
+		final Duration retryInterval = configuration.get(ResourceManagerOptions.WORKER_CREATION_RETRY_INTERVAL);
 		return new ActiveResourceManager<>(
 				createResourceManagerDriver(configuration, webInterfaceUrl, rpcService.getAddress()),
 				configuration,
@@ -107,6 +113,8 @@ public abstract class ActiveResourceManagerFactory<WorkerType extends ResourceID
 				clusterInformation,
 				fatalErrorHandler,
 				resourceManagerMetricGroup,
+				failureRater,
+				retryInterval,
 				ioExecutor);
 	}
 

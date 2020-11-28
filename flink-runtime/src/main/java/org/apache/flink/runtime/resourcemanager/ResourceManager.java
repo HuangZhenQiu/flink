@@ -75,6 +75,9 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutorRegistrationSuccess;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -107,6 +110,8 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 		implements ResourceManagerGateway, LeaderContender {
 
 	public static final String RESOURCE_MANAGER_NAME = "resourcemanager";
+
+	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	/** Unique id of the resource manager. */
 	private final ResourceID resourceId;
@@ -141,7 +146,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
 	private final ClusterInformation clusterInformation;
 
-	private final ResourceManagerMetricGroup resourceManagerMetricGroup;
+	protected final ResourceManagerMetricGroup resourceManagerMetricGroup;
 
 	protected final Executor ioExecutor;
 
@@ -841,7 +846,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 		}
 	}
 
-	private void registerTaskExecutorMetrics() {
+	protected void registerTaskExecutorMetrics() {
 		resourceManagerMetricGroup.gauge(
 			MetricNames.NUM_REGISTERED_TASK_MANAGERS,
 			() -> (long) taskExecutors.size());

@@ -18,7 +18,6 @@
 
 package org.apache.flink.kubernetes;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.configuration.TaskManagerOptions;
@@ -64,8 +63,6 @@ public class KubernetesResourceManagerDriver extends AbstractResourceManagerDriv
 
 	private final String clusterId;
 
-	private final Time podCreationRetryInterval;
-
 	private final KubeClientFactory kubeClientFactory;
 
 	private Optional<FlinkKubeClient> kubeClientOpt;
@@ -81,22 +78,14 @@ public class KubernetesResourceManagerDriver extends AbstractResourceManagerDriv
 
 	private Optional<KubernetesWatch> podsWatchOpt;
 
-	/**
-	 * Incompletion of this future indicates that there was a pod creation failure recently and the driver should not
-	 * retry creating pods until the future become completed again. It's guaranteed to be modified in main thread.
-	 */
-	private CompletableFuture<Void> podCreationCoolDown;
-
 	public KubernetesResourceManagerDriver(
 			Configuration flinkConfig,
 			KubeClientFactory kubeClientFactory,
 			KubernetesResourceManagerDriverConfiguration configuration) {
 		super(flinkConfig, GlobalConfiguration.loadConfiguration());
 		this.clusterId = Preconditions.checkNotNull(configuration.getClusterId());
-		this.podCreationRetryInterval = Preconditions.checkNotNull(configuration.getPodCreationRetryInterval());
 		this.kubeClientFactory = Preconditions.checkNotNull(kubeClientFactory);
 		this.requestResourceFutures = new HashMap<>();
-		this.podCreationCoolDown = FutureUtils.completedVoidFuture();
 	}
 
 	// ------------------------------------------------------------------------
@@ -161,17 +150,12 @@ public class KubernetesResourceManagerDriver extends AbstractResourceManagerDriv
 				parameters.getTaskManagerMemoryMB(),
 				parameters.getTaskManagerCPU());
 
-		// When K8s API Server is temporary unavailable, `kubeClient.createTaskManagerPod` might fail immediately.
-		// In case of pod creation failures, we should wait for an interval before trying to create new pods.
-		// Otherwise, ActiveResourceManager will always re-requesting the worker, which keeps the main thread busy.
-		final CompletableFuture<Void> createPodFuture =
-			podCreationCoolDown.thenCompose((ignore) -> getKubeClient().createTaskManagerPod(taskManagerPod));
+		final CompletableFuture<Void> createPodFuture = getKubeClient().createTaskManagerPod(taskManagerPod);
 
 		FutureUtils.assertNoException(
 				createPodFuture.handleAsync((ignore, exception) -> {
 					if (exception != null) {
 						log.warn("Could not create pod {}, exception: {}", podName, exception);
-						tryResetPodCreationCoolDown();
 						CompletableFuture<KubernetesWorkerNode> future =
 								requestResourceFutures.remove(taskManagerPod.getName());
 						if (future != null) {
@@ -248,17 +232,6 @@ public class KubernetesResourceManagerDriver extends AbstractResourceManagerDriv
 				dynamicProperties,
 				taskManagerParameters,
 				ExternalResourceUtils.getExternalResources(flinkConfig, KubernetesConfigOptions.EXTERNAL_RESOURCE_KUBERNETES_CONFIG_KEY_SUFFIX));
-	}
-
-	private void tryResetPodCreationCoolDown() {
-		if (podCreationCoolDown.isDone()) {
-			log.info("Pod creation failed. Will not retry creating pods in {}.", podCreationRetryInterval);
-			podCreationCoolDown = new CompletableFuture<>();
-			getMainThreadExecutor().schedule(
-					() -> podCreationCoolDown.complete(null),
-					podCreationRetryInterval.getSize(),
-					podCreationRetryInterval.getUnit());
-		}
 	}
 
 	private void terminatedPodsInMainThread(List<KubernetesPod> pods) {

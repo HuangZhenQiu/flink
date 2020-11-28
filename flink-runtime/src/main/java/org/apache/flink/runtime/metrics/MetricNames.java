@@ -67,6 +67,7 @@ public class MetricNames {
 
 	public static final String CHECKPOINT_ALIGNMENT_TIME = "checkpointAlignmentTime";
 	public static final String CHECKPOINT_START_DELAY_TIME = "checkpointStartDelayNanos";
+	public static final String WORKER_FAILURE_RATE = "workFailureRate";
 
 	public static String currentInputWatermarkName(int index) {
 		return String.format(IO_CURRENT_INPUT_WATERMARK_PATERN, index);

@@ -16,19 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.flink.kubernetes.configuration;
+package org.apache.flink.runtime.execution;
 
 /**
- * Configuration specific to {@link org.apache.flink.kubernetes.KubernetesResourceManagerDriver}.
+ * Exception thrown when a threshold exceeds.
  */
-public class KubernetesResourceManagerDriverConfiguration {
-	private final String clusterId;
+public class ThresholdExceedException extends RuntimeException {
 
-	public KubernetesResourceManagerDriverConfiguration(String clusterId) {
-		this.clusterId = clusterId;
-	}
+	private static final long serialVersionUID = 241871312848349L;
 
-	public String getClusterId() {
-		return clusterId;
+	public ThresholdExceedException(String message) {
+		super(message);
 	}
 }
