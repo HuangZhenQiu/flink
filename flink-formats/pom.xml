@@ -41,7 +41,7 @@ under the License.
 	<modules>
 		<module>flink-avro</module>
 		<module>flink-json</module>
-		<module>flink-avro-confluent-registry</module>
+		<!--<module>flink-avro-confluent-registry</module>-->
 		<module>flink-parquet</module>
 		<module>flink-sequence-file</module>
 		<module>flink-compress</module>
@@ -82,7 +82,7 @@ under the License.
 				<module>flink-sql-orc</module>
 				<module>flink-sql-parquet</module>
 				<module>flink-sql-avro</module>
-				<module>flink-sql-avro-confluent-registry</module>
+				<!--<module>flink-sql-avro-confluent-registry</module>-->
 			</modules>
 		</profile>
 	</profiles>

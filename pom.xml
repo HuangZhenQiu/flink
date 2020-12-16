@@ -44,9 +44,9 @@ under the License.
 	</licenses>
 
 	<scm>
-		<url>https://github.com/apache/flink</url>
-		<connection>git@github.com:apache/flink.git</connection>
-		<developerConnection>scm:git:https://gitbox.apache.org/repos/asf/flink.git</developerConnection>
+		<connection>scm:git:gitolite@code.uber.internal:data/flink</connection>
+		<developerConnection>scm:git:gitolite@code.uber.internal:data/flink</developerConnection>
+		<tag>HEAD</tag>
 	</scm>
 
 	<modules>
