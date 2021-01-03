@@ -46,7 +46,8 @@ class StreamExecutionEnvironmentTest {
 
     val stream = env.fromSource(
       new MockSource(Boundedness.CONTINUOUS_UNBOUNDED, 1),
-      WatermarkStrategy.noWatermarks(),
+      null,
+      // atermarkStrategy.noWatermarks(),
       "test source")
 
     assertEquals(typeInfo, stream.dataType)

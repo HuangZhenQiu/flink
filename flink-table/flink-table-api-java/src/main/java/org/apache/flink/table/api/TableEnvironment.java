@@ -799,6 +799,14 @@ public interface TableEnvironment {
     boolean dropTemporaryView(String path);
 
     /**
+     * Register remote udf path into execution environment.
+     *
+     * @param name The remote udf library name
+     * @param path The remote udf library path
+     */
+    void registerRemoteLibrary(String name, String path);
+
+    /**
      * Returns the AST of the specified Table API and SQL queries and the execution plan to compute
      * the result of the given {@link Table}.
      *

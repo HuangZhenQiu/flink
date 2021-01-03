@@ -52,6 +52,7 @@ import org.apache.flink.util.StringUtils;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.time.DayOfWeek;
@@ -226,6 +227,59 @@ public class FunctionITCase extends StreamingTestBase {
         tEnv().executeSql(alter);
         CatalogFunction afterUpdate = catalog.getFunction(objectPath);
         assertEquals("org.apache.flink.function.TestFunction2", afterUpdate.getClassName());
+    }
+
+    @Test
+    public void testCreateCatalogFunctionWithLocalResources() throws Exception {
+
+        File file = new File("target/local-udf-test-jar.jar");
+        String ddl1 =
+                "create function f1 as 'org.apache.flink.table.planner.runtime.stream.sql.TestLocalScalarFunction'"
+                        + " using jar 'file://"
+                        + file.getAbsolutePath()
+                        + "'";
+        tEnv().executeSql(ddl1);
+        assertTrue(Arrays.asList(tEnv().listFunctions()).contains("f1"));
+
+        tEnv().executeSql("DROP FUNCTION IF EXISTS default_catalog.default_database.f1");
+        assertFalse(Arrays.asList(tEnv().listFunctions()).contains("f1"));
+    }
+
+    @Test
+    public void testLocalScalarFunction() throws Exception {
+        File file = new File("target/local-udf-test-jar.jar");
+        final List<Row> sourceData =
+                Arrays.asList(Row.of("Bob", 42), Row.of("Alice", 12), Row.of(null, 0));
+
+        final List<Row> sinkData =
+                Arrays.asList(
+                        Row.of("Hello World Bob", 42),
+                        Row.of("Hello World Alice", 12),
+                        Row.of("Hello", 0));
+
+        TestCollectionTableFactory.reset();
+        TestCollectionTableFactory.initData(sourceData);
+
+        tEnv().executeSql(
+                        "CREATE TABLE SourceTable(s STRING, i INT NOT NULL) WITH ('connector' = 'COLLECTION')");
+        tEnv().executeSql(
+                        "CREATE TABLE SinkTable(s1 STRING, i INT NOT NULL) WITH ('connector' = 'COLLECTION')");
+
+        tEnv().executeSql(
+                        "create function f1 as 'org.apache.flink.table.planner.runtime.stream.sql.TestLocalScalarFunction'"
+                                + " using jar 'file://"
+                                + file.getAbsolutePath()
+                                + "'");
+
+        tEnv().executeSql(
+                        "INSERT INTO SinkTable "
+                                + "SELECT "
+                                + "  f1(s), "
+                                + "  i "
+                                + "FROM SourceTable")
+                .await();
+
+        assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
     }
 
     @Test

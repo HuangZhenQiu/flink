@@ -148,6 +148,8 @@ class MockTableEnvironment extends TableEnvironment {
 
   override def dropTemporaryFunction(path: String): Boolean = ???
 
+  override def registerRemoteLibrary(name: String, path: String): Unit = ???
+
   override def fromValues(expression: Expression*): Table = ???
 
   override def fromValues(rowType: AbstractDataType[_], values: Expression*): Table = ???

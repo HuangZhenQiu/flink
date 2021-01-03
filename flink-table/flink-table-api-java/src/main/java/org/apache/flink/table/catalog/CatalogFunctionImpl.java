@@ -21,6 +21,9 @@ package org.apache.flink.table.catalog;
 import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -30,17 +33,24 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class CatalogFunctionImpl implements CatalogFunction {
     private final String className; // Fully qualified class name of the function
     private final FunctionLanguage functionLanguage;
+    private final List<String> remoteResources;
 
     public CatalogFunctionImpl(String className) {
         this(className, FunctionLanguage.JAVA);
     }
 
     public CatalogFunctionImpl(String className, FunctionLanguage functionLanguage) {
+        this(className, functionLanguage, new ArrayList<>());
+    }
+
+    public CatalogFunctionImpl(
+            String className, FunctionLanguage functionLanguage, List<String> remoteResources) {
         checkArgument(
                 !StringUtils.isNullOrWhitespaceOnly(className),
                 "className cannot be null or empty");
         this.className = className;
         this.functionLanguage = checkNotNull(functionLanguage, "functionLanguage cannot be null");
+        this.remoteResources = remoteResources;
     }
 
     @Override
@@ -50,7 +60,7 @@ public class CatalogFunctionImpl implements CatalogFunction {
 
     @Override
     public CatalogFunction copy() {
-        return new CatalogFunctionImpl(getClassName(), functionLanguage);
+        return new CatalogFunctionImpl(getClassName(), functionLanguage, remoteResources);
     }
 
     @Override
@@ -86,6 +96,11 @@ public class CatalogFunctionImpl implements CatalogFunction {
     }
 
     @Override
+    public List<String> getRemoteResourcePaths() {
+        return remoteResources;
+    }
+
+    @Override
     public String toString() {
         return "CatalogFunctionImpl{"
                 + "className='"
@@ -96,6 +111,9 @@ public class CatalogFunctionImpl implements CatalogFunction {
                 + "', "
                 + "isGeneric='"
                 + isGeneric()
+                + "', "
+                + "remoteResource='"
+                + Arrays.toString(remoteResources.toArray())
                 + "'}";
     }
 }

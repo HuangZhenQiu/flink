@@ -415,6 +415,10 @@ public class JobGraph implements Serializable {
         return classpaths;
     }
 
+    public void addClasspath(URL path) {
+        this.classpaths.add(path);
+    }
+
     /**
      * Gets the maximum parallelism of all operations in this job graph.
      *

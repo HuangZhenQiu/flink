@@ -18,6 +18,7 @@
 
 package org.apache.flink.table.catalog;
 
+import java.util.List;
 import java.util.Optional;
 
 /** Interface for a function in a catalog. */
@@ -64,4 +65,11 @@ public interface CatalogFunction {
      * @return the language type of the function definition
      */
     FunctionLanguage getFunctionLanguage();
+
+    /**
+     * Get remote resource paths for the definition of function.
+     *
+     * @return the remote resource paths of the function definition
+     */
+    List<String> getRemoteResourcePaths();
 }

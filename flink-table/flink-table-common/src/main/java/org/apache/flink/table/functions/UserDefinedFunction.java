@@ -55,6 +55,7 @@ import java.io.Serializable;
  */
 @PublicEvolving
 public abstract class UserDefinedFunction implements FunctionDefinition, Serializable {
+    private transient ClassLoader classLoader;
 
     /** Returns a unique, serialized representation for this function. */
     public final String functionIdentifier() {
@@ -111,5 +112,13 @@ public abstract class UserDefinedFunction implements FunctionDefinition, Seriali
     @Override
     public String toString() {
         return getClass().getSimpleName();
+    }
+
+    public void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
+    public ClassLoader getClassLoader() {
+        return this.classLoader;
     }
 }

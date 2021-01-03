@@ -23,6 +23,7 @@ import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
@@ -31,7 +32,9 @@ import org.apache.calcite.util.ImmutableNullableList;
 
 import javax.annotation.Nonnull;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -47,6 +50,8 @@ public class SqlCreateFunction extends SqlCreate {
 
     private final String functionLanguage;
 
+    private final SqlNodeList jars;
+
     private final boolean isTemporary;
 
     private final boolean isSystemFunction;
@@ -56,6 +61,7 @@ public class SqlCreateFunction extends SqlCreate {
             SqlIdentifier functionIdentifier,
             SqlCharStringLiteral functionClassName,
             String functionLanguage,
+            SqlNodeList jars,
             boolean ifNotExists,
             boolean isTemporary,
             boolean isSystemFunction) {
@@ -65,6 +71,7 @@ public class SqlCreateFunction extends SqlCreate {
         this.isSystemFunction = isSystemFunction;
         this.isTemporary = isTemporary;
         this.functionLanguage = functionLanguage;
+        this.jars = jars;
     }
 
     @Override
@@ -98,6 +105,18 @@ public class SqlCreateFunction extends SqlCreate {
             writer.keyword("LANGUAGE");
             writer.keyword(functionLanguage);
         }
+        if (jars != null) {
+            writer.keyword("USING");
+            // Add other type support later
+            writer.keyword("JAR");
+            if (jars.size() > 0) {
+                jars.get(0).unparse(writer, leftPrec, rightPrec);
+                for (int i = 1; i < jars.size(); ++i) {
+                    writer.keyword(",");
+                    jars.get(i).unparse(writer, leftPrec, rightPrec);
+                }
+            }
+        }
     }
 
     public boolean isIfNotExists() {
@@ -122,5 +141,15 @@ public class SqlCreateFunction extends SqlCreate {
 
     public String[] getFunctionIdentifier() {
         return functionIdentifier.names.toArray(new String[0]);
+    }
+
+    public List<String> getRemoteResourcePath() {
+        if (jars == null) {
+            return new ArrayList<>();
+        }
+
+        return jars.getList().stream()
+                .map(jar -> jar.toString().substring(1, jar.toString().length() - 1))
+                .collect(Collectors.toList());
     }
 }

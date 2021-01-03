@@ -33,6 +33,7 @@ import org.junit.runners.Parameterized.Parameter;
 
 import javax.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -81,10 +82,21 @@ public class UserDefinedFunctionHelperTest {
                                         + "' must have a public default constructor."),
                 TestSpec.forClass(HierarchicalTableAggregateFunction.class).expectSuccess(),
                 TestSpec.forCatalogFunction(
-                                ValidScalarFunction.class.getName(), FunctionLanguage.JAVA)
+                                ValidScalarFunction.class.getName(),
+                                FunctionLanguage.JAVA,
+                                new ArrayList<>())
                         .expectSuccess(),
-                TestSpec.forCatalogFunction("I don't exist.", FunctionLanguage.JAVA)
-                        .expectErrorMessage("Cannot instantiate user-defined function 'f'."));
+                TestSpec.forCatalogFunction(
+                                "I don't exisinstantiateFunctiont.",
+                                FunctionLanguage.JAVA,
+                                new ArrayList<>())
+                        .expectErrorMessage("Cannot instantiate user-defined function 'f'."),
+                TestSpec.forCatalogFunction(
+                                "com.uber.athena.athenax.udf.TestScalarFunction",
+                                FunctionLanguage.JAVA,
+                                Arrays.asList(
+                                        "http://localhost:8000/athenax-udf-1.1.6-SNAPSHOT.jar"))
+                        .expectSuccess());
     }
 
     @Parameter public TestSpec testSpec;
@@ -102,10 +114,7 @@ public class UserDefinedFunctionHelperTest {
             testErrorMessage();
             assertThat(
                     UserDefinedFunctionHelper.instantiateFunction(
-                            UserDefinedFunctionHelperTest.class.getClassLoader(),
-                            new Configuration(),
-                            "f",
-                            testSpec.catalogFunction),
+                            new Configuration(), "f", testSpec.catalogFunction),
                     notNullValue());
         }
     }
@@ -169,8 +178,9 @@ public class UserDefinedFunctionHelperTest {
             return new TestSpec(function);
         }
 
-        static TestSpec forCatalogFunction(String className, FunctionLanguage language) {
-            return new TestSpec(new CatalogFunctionMock(className, language));
+        static TestSpec forCatalogFunction(
+                String className, FunctionLanguage language, List<String> resources) {
+            return new TestSpec(new CatalogFunctionMock(className, language, resources));
         }
 
         TestSpec expectErrorMessage(String expectedErrorMessage) {
@@ -190,9 +200,17 @@ public class UserDefinedFunctionHelperTest {
 
         private final FunctionLanguage language;
 
+        private final List<String> remoteResourcePaths;
+
         CatalogFunctionMock(String className, FunctionLanguage language) {
+            this(className, language, new ArrayList<>());
+        }
+
+        CatalogFunctionMock(
+                String className, FunctionLanguage language, List<String> remoteResourcePaths) {
             this.className = className;
             this.language = language;
+            this.remoteResourcePaths = remoteResourcePaths;
         }
 
         @Override
@@ -223,6 +241,11 @@ public class UserDefinedFunctionHelperTest {
         @Override
         public FunctionLanguage getFunctionLanguage() {
             return language;
+        }
+
+        @Override
+        public List<String> getRemoteResourcePaths() {
+            return remoteResourcePaths;
         }
     }
 

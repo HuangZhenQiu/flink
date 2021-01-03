@@ -335,6 +335,10 @@ abstract class BatchTableEnvImpl(
     }
   }
 
+  override def registerRemoteLibrary(name: String, path: String): Unit = {
+    execEnv.registerCachedFile(path, name, true);
+  }
+
   protected def execute(dataSinks: JList[DataSink[_]], jobName: String): JobClient = {
     val plan = createPipeline(dataSinks, jobName)
     executePipeline(plan)

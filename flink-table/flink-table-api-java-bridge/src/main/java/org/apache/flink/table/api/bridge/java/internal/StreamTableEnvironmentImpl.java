@@ -213,6 +213,11 @@ public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl
     }
 
     @Override
+    public void registerRemoteLibrary(String name, String path) {
+        executionEnvironment.registerCachedFile(path, name, true);
+    }
+
+    @Override
     public <T> Table fromDataStream(DataStream<T> dataStream) {
         JavaDataStreamQueryOperation<T> queryOperation =
                 asQueryOperation(dataStream, Optional.empty());
