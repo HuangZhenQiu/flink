@@ -139,6 +139,10 @@ class StreamTableEnvironmentImpl (
     )
   }
 
+  override def registerRemoteLibrary(name: String, path: String): Unit = {
+    scalaExecutionEnvironment.registerCachedFile(path, name, true);
+  }
+
   override def registerFunction[T: TypeInformation, ACC: TypeInformation](
       name: String,
       f: TableAggregateFunction[T, ACC])

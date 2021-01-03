@@ -219,6 +219,11 @@ abstract class TableEnvImpl(
     functionCatalog.dropTemporaryCatalogFunction(unresolvedIdentifier, true)
   }
 
+  override def registerRemoteLibrary(name: String, path: String): Unit = {
+    throw new UnsupportedOperationException("Register remote library in table environment" +
+      " implementation is not support yet");
+  }
+
   /**
     * Registers a [[TableFunction]] under a unique name. Replaces already existing
     * user-defined functions under this name.

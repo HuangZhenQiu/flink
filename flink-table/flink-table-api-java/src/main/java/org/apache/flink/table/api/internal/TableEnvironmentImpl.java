@@ -375,7 +375,8 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
     public void createTemporarySystemFunction(
             String name, Class<? extends UserDefinedFunction> functionClass) {
         final UserDefinedFunction functionInstance =
-                UserDefinedFunctionHelper.instantiateFunction(functionClass);
+                UserDefinedFunctionHelper.instantiateFunction(
+                        functionClass, functionClass.getClassLoader());
         createTemporarySystemFunction(name, functionInstance);
     }
 
@@ -414,7 +415,8 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
     public void createTemporaryFunction(
             String path, Class<? extends UserDefinedFunction> functionClass) {
         final UserDefinedFunction functionInstance =
-                UserDefinedFunctionHelper.instantiateFunction(functionClass);
+                UserDefinedFunctionHelper.instantiateFunction(
+                        functionClass, functionClass.getClassLoader());
         createTemporaryFunction(path, functionInstance);
     }
 
@@ -441,6 +443,12 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
     public void createTemporaryView(String path, Table view) {
         UnresolvedIdentifier identifier = parser.parseIdentifier(path);
         createTemporaryView(identifier, view);
+    }
+
+    @Override
+    public void registerRemoteLibrary(String name, String path) {
+        throw new UnsupportedOperationException(
+                "Register remote library in table environment is not" + " supported yet.");
     }
 
     private void createTemporaryView(UnresolvedIdentifier identifier, Table view) {
@@ -1451,6 +1459,14 @@ public class TableEnvironmentImpl implements TableEnvironmentInternal {
                         createCatalogFunctionOperation.getFunctionIdentifier().toObjectPath(),
                         createCatalogFunctionOperation.getCatalogFunction(),
                         createCatalogFunctionOperation.isIgnoreIfExists());
+            }
+
+            int i = 1;
+            for (String path :
+                    createCatalogFunctionOperation.getCatalogFunction().getRemoteResourcePaths()) {
+                registerRemoteLibrary(
+                        createCatalogFunctionOperation.getFunctionIdentifier().toString() + i,
+                        path);
             }
             return TableResultImpl.TABLE_RESULT_OK;
         } catch (ValidationException e) {

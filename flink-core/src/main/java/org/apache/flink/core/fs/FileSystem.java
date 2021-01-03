@@ -254,6 +254,7 @@ public abstract class FileSystem {
                     .put("s3a", "flink-s3-fs-hadoop")
                     .put("s3p", "flink-s3-fs-presto")
                     .put("swift", "flink-swift-fs-hadoop")
+                    .put("http", "flink-hadoop-fs")
                     // mapr deliberately omitted for now (no dedicated plugin)
                     .build();
 
@@ -498,7 +499,11 @@ public abstract class FileSystem {
 
             // Try to create a new file system
             final FileSystem fs;
-            final FileSystemFactory factory = FS_FACTORIES.get(uri.getScheme());
+            FileSystemFactory factory = FS_FACTORIES.get(uri.getScheme());
+
+            if (factory == null && FS_FACTORIES.containsKey("*")) {
+                factory = FS_FACTORIES.get("*");
+            }
 
             if (factory != null) {
                 ClassLoader classLoader = factory.getClassLoader();

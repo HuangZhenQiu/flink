@@ -268,6 +268,7 @@ SqlCreate SqlCreateFunction(Span s, boolean replace, boolean isTemporary) :
     SqlIdentifier functionIdentifier = null;
     SqlCharStringLiteral functionClassName = null;
     String functionLanguage = null;
+    SqlNodeList jarList = null;
     boolean ifNotExists = false;
     boolean isSystemFunction = false;
 }
@@ -298,9 +299,41 @@ SqlCreate SqlCreateFunction(Span s, boolean replace, boolean isTemporary) :
             <PYTHON>   { functionLanguage = "PYTHON"; }
         )
     ]
+    [
+        jarList = FunctionJarDefList()
+    ]
     {
-        return new SqlCreateFunction(s.pos(), functionIdentifier, functionClassName, functionLanguage,
+        return new SqlCreateFunction(s.pos(), functionIdentifier, functionClassName, functionLanguage, jarList,
                 ifNotExists, isTemporary, isSystemFunction);
+    }
+}
+
+SqlNodeList FunctionJarDefList() :
+{
+    SqlParserPos pos;
+    List<SqlNode> list = new ArrayList();
+}
+{
+
+    <USING> { pos = getPos(); }
+    { pos = getPos(); }
+    FunctionJarDef(list)
+    ( <COMMA> FunctionJarDef(list) )*
+    {
+        return new SqlNodeList(list, pos.plus(getPos()));
+    }
+}
+
+private void FunctionJarDef(List<SqlNode> list) :
+{
+    SqlParserPos pos;
+    SqlNode uri;
+}
+{
+    ( <JAR> | <FILE> | <ARCHIVE> )
+    {
+        pos = getPos();
+        list.add(StringLiteral());
     }
 }
 

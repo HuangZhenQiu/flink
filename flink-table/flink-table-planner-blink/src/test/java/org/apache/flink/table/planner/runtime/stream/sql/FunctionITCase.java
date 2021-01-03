@@ -48,10 +48,16 @@ import org.apache.flink.types.Row;
 import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.StringUtils;
 
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -62,6 +68,10 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.any;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -81,11 +91,29 @@ import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
  */
 public class FunctionITCase extends StreamingTestBase {
 
+    @Rule
+    public WireMockRule mockServr =
+            new WireMockRule(
+                    WireMockConfiguration.wireMockConfig().dynamicPort().dynamicHttpsPort());
+
     private static final String TEST_FUNCTION = TestUDF.class.getName();
 
     @Test
     public void testCreateCatalogFunctionInDefaultCatalog() {
         String ddl1 = "create function f1 as 'org.apache.flink.function.TestFunction'";
+        tEnv().executeSql(ddl1);
+        assertTrue(Arrays.asList(tEnv().listFunctions()).contains("f1"));
+
+        tEnv().executeSql("DROP FUNCTION IF EXISTS default_catalog.default_database.f1");
+        assertFalse(Arrays.asList(tEnv().listFunctions()).contains("f1"));
+    }
+
+    @Test
+    public void testCreateCatalogFunctionWithRemoteResources() throws Exception {
+        setupStub();
+        String ddl1 =
+                "create function f1 as 'org.apache.flink.table.planner.runtime.stream.sql.TestRemoteScalarFunction'"
+                        + " using jar 'http://localhost:8000/athenax-udf-1.1.6-SNAPSHOT.jar'";
         tEnv().executeSql(ddl1);
         assertTrue(Arrays.asList(tEnv().listFunctions()).contains("f1"));
 
@@ -758,6 +786,45 @@ public class FunctionITCase extends StreamingTestBase {
     }
 
     @Test
+    public void testRemoteScalarFunction() throws Exception {
+        setupStub();
+
+        final List<Row> sourceData =
+                Arrays.asList(Row.of("Bob", 42), Row.of("Alice", 12), Row.of(null, 0));
+
+        final List<Row> sinkData =
+                Arrays.asList(
+                        Row.of("Hello World Bob", 42),
+                        Row.of("Hello World Alice", 12),
+                        Row.of("Hello", 0));
+
+        TestCollectionTableFactory.reset();
+        TestCollectionTableFactory.initData(sourceData);
+
+        tEnv().executeSql(
+                        "CREATE TABLE SourceTable(s STRING, i INT NOT NULL) WITH ('connector' = 'COLLECTION')");
+        tEnv().executeSql(
+                        "CREATE TABLE SinkTable(s1 STRING, i INT NOT NULL) WITH ('connector' = 'COLLECTION')");
+
+        tEnv().executeSql(
+                        "create function f1 as 'org.apache.flink.table.planner.runtime.stream.sql.TestRemoteScalarFunction'"
+                                + " using jar '"
+                                + mockServr.baseUrl()
+                                + "/remote-udf-test-jar.jar"
+                                + "'");
+
+        tEnv().executeSql(
+                        "INSERT INTO SinkTable "
+                                + "SELECT "
+                                + "  f1(s), "
+                                + "  i "
+                                + "FROM SourceTable")
+                .await();
+
+        assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
+    }
+
+    @Test
     public void testInvalidCustomScalarFunction() throws Exception {
         tEnv().executeSql("CREATE TABLE SinkTable(s STRING) WITH ('connector' = 'COLLECTION')");
 
@@ -1335,5 +1402,14 @@ public class FunctionITCase extends StreamingTestBase {
             collect(Row.of(s.toString(), new byte[0]));
             collect(Row.of(s.toString(), s.toBytes()));
         }
+    }
+
+    private void setupStub() throws Exception {
+        File file = new File("target/remote-udf-test-jar.jar");
+        byte[] data = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+
+        stubFor(
+                any(urlEqualTo("/remote-udf-test-jar.jar"))
+                        .willReturn(aResponse().withStatus(200).withBody(data)));
     }
 }

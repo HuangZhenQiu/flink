@@ -138,6 +138,9 @@ public enum ClientUtils {
         Collection<Tuple2<String, PermanentBlobKey>> blobKeys =
                 uploadUserArtifacts(jobGraph.getJobID(), artifactPaths, blobClient);
         setUserArtifactBlobKeys(jobGraph, blobKeys);
+        for (Tuple2<String, Path> userArtifact : artifactPaths) {
+            jobGraph.addClasspath(userArtifact.f1.toUri().toURL());
+        }
     }
 
     private static Collection<Tuple2<String, PermanentBlobKey>> uploadUserArtifacts(

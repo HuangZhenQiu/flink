@@ -36,6 +36,12 @@ import javax.annotation.Nullable;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -187,10 +193,7 @@ public final class UserDefinedFunctionHelper {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static UserDefinedFunction instantiateFunction(
-            ClassLoader classLoader,
-            @Nullable ReadableConfig config,
-            String name,
-            CatalogFunction catalogFunction) {
+            @Nullable ReadableConfig config, String name, CatalogFunction catalogFunction) {
         try {
             switch (catalogFunction.getFunctionLanguage()) {
                 case PYTHON:
@@ -203,9 +206,11 @@ public final class UserDefinedFunctionHelper {
                                     catalogFunction.getClassName(), config);
                 case JAVA:
                 case SCALA:
+                    ClassLoader classLoader = createClassLoaderForRemoteUDF(name, catalogFunction);
                     final Class<?> functionClass =
                             classLoader.loadClass(catalogFunction.getClassName());
-                    return UserDefinedFunctionHelper.instantiateFunction((Class) functionClass);
+                    return UserDefinedFunctionHelper.instantiateFunction(
+                            (Class) functionClass, classLoader);
                 default:
                     throw new IllegalArgumentException(
                             "Unknown function language: " + catalogFunction.getFunctionLanguage());
@@ -220,10 +225,12 @@ public final class UserDefinedFunctionHelper {
      * Instantiates a {@link UserDefinedFunction} assuming a JVM function with default constructor.
      */
     public static UserDefinedFunction instantiateFunction(
-            Class<? extends UserDefinedFunction> functionClass) {
+            Class<? extends UserDefinedFunction> functionClass, ClassLoader classLoader) {
         validateClass(functionClass, true);
         try {
-            return functionClass.newInstance();
+            UserDefinedFunction function = functionClass.newInstance();
+            function.setClassLoader(classLoader);
+            return function;
         } catch (Exception e) {
             throw new ValidationException(
                     String.format(
@@ -231,6 +238,42 @@ public final class UserDefinedFunctionHelper {
                             functionClass.getName()),
                     e);
         }
+    }
+
+    public static UserDefinedFunction instantiateFunction(
+            Class<? extends UserDefinedFunction> functionClass) {
+        return instantiateFunction(functionClass, Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * Create class loader for catalog function.
+     *
+     * @param name the name of catalog function
+     * @param catalogFunction the catalog function has remote lib paths to resolve
+     * @return the classloader with remote libs.
+     */
+    private static ClassLoader createClassLoaderForRemoteUDF(
+            String name, CatalogFunction catalogFunction) {
+        if (catalogFunction.getRemoteResourcePaths().isEmpty()) {
+            // TODO use classloader of catalog manager in the future
+            return Thread.currentThread().getContextClassLoader();
+        }
+
+        List<URL> udfURLs = new ArrayList<>();
+        for (String path : catalogFunction.getRemoteResourcePaths()) {
+            try {
+                udfURLs.add(new URL(path));
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Catalog function %s has unresolvable remote resource path %s",
+                                name, path));
+            }
+        }
+
+        URL[] urls = new URL[udfURLs.size()];
+        return AccessController.doPrivileged(
+                (PrivilegedAction<ClassLoader>) () -> new URLClassLoader(udfURLs.toArray(urls)));
     }
 
     /** Prepares a {@link UserDefinedFunction} instance for usage in the API. */

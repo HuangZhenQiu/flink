@@ -43,8 +43,10 @@ import org.apache.flink.table.functions.UserDefinedFunctionHelper;
 import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.util.Preconditions;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -646,13 +648,8 @@ public final class FunctionCatalog {
             // directly.
             return ((InlineCatalogFunction) function).getDefinition();
         }
-        return UserDefinedFunctionHelper.instantiateFunction(
-                Thread.currentThread()
-                        .getContextClassLoader(), // TODO use classloader of catalog manager in the
-                // future
-                config,
-                name,
-                function);
+
+        return UserDefinedFunctionHelper.instantiateFunction(config, name, function);
     }
 
     /** The CatalogFunction which holds a instantiated UDF. */
@@ -699,6 +696,11 @@ public final class FunctionCatalog {
         @Override
         public FunctionLanguage getFunctionLanguage() {
             return FunctionLanguage.JAVA;
+        }
+
+        @Override
+        public List<String> getRemoteResourcePaths() {
+            return new ArrayList<>();
         }
 
         public FunctionDefinition getDefinition() {

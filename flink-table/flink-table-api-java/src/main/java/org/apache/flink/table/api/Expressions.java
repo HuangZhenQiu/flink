@@ -526,7 +526,7 @@ public final class Expressions {
     public static ApiExpression call(
             Class<? extends UserDefinedFunction> function, Object... arguments) {
         final UserDefinedFunction functionInstance =
-                UserDefinedFunctionHelper.instantiateFunction(function);
+                UserDefinedFunctionHelper.instantiateFunction(function, function.getClassLoader());
         return apiCall(functionInstance, arguments);
     }
 

@@ -68,8 +68,7 @@ public class HiveFunctionDefinitionFactory implements FunctionDefinitionFactory 
 
     public FunctionDefinition createFunctionDefinitionFromFlinkFunction(
             String name, CatalogFunction catalogFunction) {
-        return UserDefinedFunctionHelper.instantiateFunction(
-                Thread.currentThread().getContextClassLoader(), null, name, catalogFunction);
+        return UserDefinedFunctionHelper.instantiateFunction(null, name, catalogFunction);
     }
 
     /**
