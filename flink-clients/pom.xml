@@ -175,6 +175,7 @@ under the License.
 							<goal>clean</goal>
 						</goals>
 						<configuration>
+							<skip>true</skip>
 							<excludeDefaultDirectories>true</excludeDefaultDirectories>
 							<filesets>
 								<fileset>
