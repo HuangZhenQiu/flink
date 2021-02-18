@@ -63,11 +63,11 @@ under the License.
 		</file>
 
 		<!-- copy bash utils -->
-		<file>
+		<!--<file>
 			<source>target/bash-java-utils.jar</source>
 			<outputDirectory>bin/</outputDirectory>
 			<fileMode>0644</fileMode>
-		</file>
+		</file>-->
 
 		<!-- Table/SQL Uber JAR -->
 		<file>

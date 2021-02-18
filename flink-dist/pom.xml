@@ -484,7 +484,7 @@ under the License.
 						<artifactId>exec-maven-plugin</artifactId>
 						<version>1.5.0</version>
 						<executions>
-							<execution>
+							<!--<execution>
 								<id>remove-build-target-link</id>
 								<phase>clean</phase>
 								<goals>
@@ -498,7 +498,7 @@ under the License.
 										<argument>${project.basedir}/../build-target</argument>
 									</arguments>
 								</configuration>
-							</execution>
+							</execution>-->
 							<execution>
 								<id>create-build-target-link</id>
 								<phase>package</phase>
