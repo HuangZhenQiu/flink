@@ -30,8 +30,9 @@ under the License.
 	</parent>
 
 	<properties>
-		<flink.format.parquet.version>1.12.2</flink.format.parquet.version>
 		<guava.version>30.0-jre</guava.version>
+		<flink.format.parquet.version>1.12.0.15-apple</flink.format.parquet.version>
+		<flink.format.parquet.kms.version>1.1.3-apple</flink.format.parquet.kms.version>
 	</properties>
 
 	<artifactId>flink-formats</artifactId>

@@ -87,6 +87,12 @@ under the License.
 			</exclusions>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.parquet</groupId>
+			<artifactId>parquet-kms-apple</artifactId>
+			<version>${flink.format.parquet.kms.version}</version>
+		</dependency>
+
 		<!-- Hadoop is needed by Parquet -->
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
