@@ -205,6 +205,14 @@ under the License.
 		<test.unit.pattern>**/*Test.*</test.unit.pattern>
 	</properties>
 
+	<repositories>
+	 <repository>
+		 <id>apple-release</id>
+		 <name>apple-release</name>
+		 <url>https://artifacts.apple.com/libs-release</url>
+	 </repository>
+ </repositories>
+
 	<dependencies>
 
 		<dependency>
