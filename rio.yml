@@ -16,7 +16,7 @@ pipelines:
         #- ls -la ~/.m2
         #- mvn help:effective-settings -X -rf :flink-avro-confluent-registry
         - rm -rf .staged-artifacts
-        - mvn clean deploy -Pdocs-and-source -DskipTests -Drat.skip -Dscala-2.12 -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
+        - mvn clean deploy -Dscala-2.12 -Phive-3.1.3.0-apple,docs-and-source -DskipTests -Dfast -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
         # see https://docs.aci.apple.com/rio/guide-to-rio/package-and-publish/freeform.html
         # must exclude maven-metadata.xml
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
