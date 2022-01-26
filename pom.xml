@@ -60,6 +60,22 @@ under the License.
 				<enabled>false</enabled>
 			</releases>
 		</repository>
+		<repository>
+				<id>apple-release</id>
+				<name>apple-release</name>
+				<url>https://artifacts.apple.com/libs-release</url>
+				<snapshots>
+						<enabled>false</enabled>
+				</snapshots>
+		</repository>
+		<repository>
+				<id>apple-snapshots</id>
+				<name>apple-snapshots</name>
+				<url>https://artifacts.apple.com/libs-snapshot</url>
+				<snapshots>
+						<enabled>true</enabled>
+				</snapshots>
+		</repository>
 	</repositories>
 
 	<modules>
@@ -204,14 +220,6 @@ under the License.
 		<test.randomization.seed/>
 		<test.unit.pattern>**/*Test.*</test.unit.pattern>
 	</properties>
-
-	<repositories>
-	 <repository>
-		 <id>apple-release</id>
-		 <name>apple-release</name>
-		 <url>https://artifacts.apple.com/libs-release</url>
-	 </repository>
- </repositories>
 
 	<dependencies>
 

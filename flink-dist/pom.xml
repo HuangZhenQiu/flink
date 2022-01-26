@@ -35,6 +35,7 @@ under the License.
 	<properties>
 		<zookeeper.optional.version>3.6.3</zookeeper.optional.version>
 		<japicmp.skip>true</japicmp.skip>
+		<acs.flink.libs.version>1.15-SNAPSHOT</acs.flink.libs.version>
 	</properties>
 
 	<dependencies>
@@ -153,7 +154,7 @@ under the License.
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- Concrete logging framework - we add this only here (and not in the 
+		<!-- Concrete logging framework - we add this only here (and not in the
 			root POM) to not tie the projects to one specific framework and make
 			it easier for users to swap logging frameworks -->
 
@@ -263,7 +264,7 @@ under the License.
 		</dependency>
 
 		<!--
-			The following dependencies are packaged in 'opt/' 
+			The following dependencies are packaged in 'opt/'
 			The scope of these dependencies needs to be 'provided' so that
 			they are not included into the 'flink-dist' uber jar.
 		-->
@@ -331,6 +332,12 @@ under the License.
 			<artifactId>flink-metrics-slf4j</artifactId>
 			<version>${project.version}</version>
 			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.apple.pie.flink</groupId>
+			<artifactId>acs-flink-metrics-hubble</artifactId>
+			<version>${acs.flink.libs.version}</version>
 		</dependency>
 		<!-- end optional Flink metrics reporters -->
 
@@ -725,6 +732,7 @@ under the License.
 									<exclude>org.apache.logging.log4j:*</exclude>
 									<!-- Bundled separately so that users can easily switch between ZK 3.4/3.5-->
 									<exclude>org.apache.flink:flink-shaded-zookeeper-3</exclude>
+									<exclude>com.apple.pie.flink:acs-flink-metrics-hubble</exclude>
 								</excludes>
 							</artifactSet>
 						</configuration>

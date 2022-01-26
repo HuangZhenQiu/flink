@@ -28,6 +28,16 @@
 	<includeBaseDirectory>true</includeBaseDirectory>
 	<baseDirectory>flink-${project.version}</baseDirectory>
 
+	<dependencySets>
+		<dependencySet>
+			<outputDirectory>plugins/metrics-hubble/</outputDirectory>
+			<unpack>false</unpack>
+			<includes>
+				<include>com.apple.pie.flink:acs-flink-metrics-hubble</include>
+			</includes>
+		</dependencySet>
+	</dependencySets>
+
 	<files>
 		<!-- Metrics -->
 
