@@ -67,3 +67,4 @@ docs/go.mod
 docs/go.sum
 docs/.hugo_build.lock
 apple/docker/flink.tgz
+apple/docker/hadoop-*.tar.gz
