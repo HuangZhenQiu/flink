@@ -1,0 +1,55 @@
+FROM docker.apple.com/base-images/ubi8-minimal/java11-runtime
+
+USER root
+# Install dependencies
+RUN set -ex; \
+  microdnf install -y wget gnupg2 curl tar hostname gettext shadow-utils findutils
+
+# Suboptimal fix for missing libjemalloc.so from LD_PRELOAD
+RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+RUN rpm -ql epel-release
+RUN set -ex; \
+  microdnf install -y jemalloc
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/
+RUN ln -s /usr/lib64/libjemalloc.so.2 /usr/lib/x86_64-linux-gnu/libjemalloc.so
+
+# Grab gosu for easy step-down from root
+ENV GOSU_VERSION 1.11
+RUN set -ex; \
+  wget -nv -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-amd64"; \
+  wget -nv -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-amd64.asc"; \
+  export GNUPGHOME="$(mktemp -d)"; \
+  for server in ha.pool.sks-keyservers.net $(shuf -e \
+                          hkp://p80.pool.sks-keyservers.net:80 \
+                          keyserver.ubuntu.com \
+                          hkp://keyserver.ubuntu.com:80 \
+                          pgp.mit.edu) ; do \
+      gpg --batch --keyserver "$server" --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && break || : ; \
+  done && \
+  gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
+  gpgconf --kill all; \
+  rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc; \
+  chmod +x /usr/local/bin/gosu; \
+  gosu nobody true
+
+
+# Prepare environment
+ENV FLINK_HOME=/opt/flink
+ENV PATH=$FLINK_HOME/bin:$PATH
+RUN groupadd --system --gid=9999 flink && \
+    /usr/sbin/useradd --system --home-dir $FLINK_HOME --uid=9999 --gid=flink flink
+WORKDIR $FLINK_HOME
+
+# Install Flink
+COPY flink.tgz $FLINK_HOME
+RUN set -ex; \
+  tar -xf flink.tgz --strip-components=1; \
+  rm flink.tgz; \
+  \
+  chown -R flink:flink .;
+
+# Configure container
+COPY docker-entrypoint.sh /
+ENTRYPOINT ["/docker-entrypoint.sh"]
+EXPOSE 6123 8081
+CMD ["help"]

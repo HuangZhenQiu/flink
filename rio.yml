@@ -1,5 +1,12 @@
 schemaVersion: 2.0
 timeout: 60
+
+# Set defaults for all pipelines.
+package:
+  dockerfile:
+    perApplication: false
+    dockerfilePath: Dockerfile
+
 pipelines:
   # Pipeline to build Flink from Apple branch.
   - name: publish-branch-1.14.3-apple
@@ -22,12 +29,19 @@ pipelines:
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
         #- ci stage-lib "./target/artifacts/org/apache/flink/*/*/*.jar,org/apache/flink/"
         #- ci stage-lib "./target/artifacts/org/apache/flink/*/*/*.pom,org/apache/flink/"
+        - # Prepare for docker image build
+        - cd flink-dist/target/flink-*-bin/; tar cvzf tar cvf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/
     package:
       # enable for release (non -SNAPSHOT) builds
       # release: true
       freeform:
         - publish:
             - repo: m2:oss-patched
+      dockerfile:
+        - context: apple/docker/
+          version: "1.14.3.1-apple"
+          publish:
+            - repo: docker.apple.com/acs-flink/flink
 
   - name: pull-request-branch-1.14.3-apple
     branchName: branch-1.14.3-apple
