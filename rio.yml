@@ -1,27 +1,22 @@
 schemaVersion: 2.0
-timeout: 60
+timeout: 120
 
 pipelines:
   # Pipeline to build Flink from Apple branch.
-  - name: publish-branch-1.14.3-apple
-    branchName: branch-1.14.3-apple
-    timeout: 120
+  - name: publish-release-1.14-acs
+    branchName: release-1.14-acs
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
     build:
       template: freestyle:v4:publish
       steps:
         - cd /workspace
-        #- ls -la ~/.m2
-        #- mvn help:effective-settings -X -rf :flink-avro-confluent-registry
         - rm -rf .staged-artifacts
         - mvn clean deploy -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -Dfast -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
         # see https://docs.aci.apple.com/rio/guide-to-rio/package-and-publish/freeform.html
         # must exclude maven-metadata.xml
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
-        #- ci stage-lib "./target/artifacts/org/apache/flink/*/*/*.jar,org/apache/flink/"
-        #- ci stage-lib "./target/artifacts/org/apache/flink/*/*/*.pom,org/apache/flink/"
-        - # Prepare for docker image build
+        # Prepare for docker image build
         - cd flink-dist/target/flink-*-bin/; tar cvzf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/; ls -la /workspace/apple/docker/
         - cd /workspace/apple/docker; wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz; cd /workspace
     package:
@@ -34,18 +29,20 @@ pipelines:
         - dockerfilePath: apple/docker/Dockerfile.base
           context: apple/docker/
           perApplication: false
-          version: "1.14.3.1-apple"
+          version: "4-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "latest", "4-latest" ]
           publish:
-            - repo: docker.apple.com/acs-flink/flink
+            - repo: docker.apple.com/acs-flink/flink-1.14-acs
         - dockerfilePath: apple/docker/Dockerfile.hadoop
           context: apple/docker/
           perApplication: false
-          version: "1.14.3.1-apple-hadoop"
+          version: "4-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "latest", "4-latest" ]
           publish:
-            - repo: docker.apple.com/acs-flink/flink
+            - repo: docker.apple.com/acs-flink/flink-1.14-acs-hadoop
 
-  - name: pull-request-branch-1.14.3-apple
-    branchName: branch-1.14.3-apple
+  - name: pull-request-release-1.14-acs
+    branchName: release-1.14-acs
     timeout: 600
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
