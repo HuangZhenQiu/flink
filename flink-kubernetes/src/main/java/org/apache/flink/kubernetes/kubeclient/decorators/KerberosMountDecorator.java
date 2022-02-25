@@ -51,16 +51,15 @@ public class KerberosMountDecorator extends AbstractKubernetesStepDecorator {
     private static final Logger LOG = LoggerFactory.getLogger(KerberosMountDecorator.class);
 
     private final AbstractKubernetesParameters kubernetesParameters;
-    private final SecurityConfiguration securityConfig;
 
     public KerberosMountDecorator(AbstractKubernetesParameters kubernetesParameters) {
         this.kubernetesParameters = checkNotNull(kubernetesParameters);
-        this.securityConfig =
-                new SecurityConfiguration(kubernetesParameters.getFlinkConfiguration());
     }
 
     @Override
     public FlinkPod decorateFlinkPod(FlinkPod flinkPod) {
+        SecurityConfiguration securityConfig =
+                new SecurityConfiguration(kubernetesParameters.getFlinkConfiguration());
         PodBuilder podBuilder = new PodBuilder(flinkPod.getPodWithoutMainContainer());
         ContainerBuilder containerBuilder = new ContainerBuilder(flinkPod.getMainContainer());
 
@@ -131,6 +130,8 @@ public class KerberosMountDecorator extends AbstractKubernetesStepDecorator {
 
     @Override
     public List<HasMetadata> buildAccompanyingKubernetesResources() throws IOException {
+        SecurityConfiguration securityConfig =
+                new SecurityConfiguration(kubernetesParameters.getFlinkConfiguration());
 
         final List<HasMetadata> resources = new ArrayList<>();
 

@@ -18,16 +18,21 @@
 
 package org.apache.flink.kubernetes.kubeclient.factory;
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.SecurityOptions;
 import org.apache.flink.kubernetes.KubernetesTestUtils;
+import org.apache.flink.kubernetes.configuration.KubernetesConfigOptions;
 import org.apache.flink.kubernetes.kubeclient.FlinkPod;
 import org.apache.flink.kubernetes.kubeclient.KubernetesTaskManagerTestBase;
+import org.apache.flink.kubernetes.kubeclient.parameters.KubernetesTaskManagerParameters;
 import org.apache.flink.kubernetes.utils.Constants;
+import org.apache.flink.runtime.externalresource.ExternalResourceUtils;
 
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.Pod;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.apache.flink.kubernetes.utils.Constants.CONFIG_FILE_LOG4J_NAME;
@@ -97,5 +102,31 @@ class KubernetesTaskManagerFactoryTest extends KubernetesTaskManagerTestBase {
         // The args list is [bash, -c, 'java -classpath $FLINK_CLASSPATH ...'].
         assertThat(resultMainContainer.getArgs()).hasSize(3);
         assertThat(resultMainContainer.getVolumeMounts()).hasSize(4);
+    }
+
+    @Test
+    public void testDecoratorExclusion() {
+        Configuration confCopy = new Configuration(flinkConfig);
+        confCopy.set(SecurityOptions.KERBEROS_LOGIN_KEYTAB, "missing.file");
+        confCopy.set(
+                KubernetesConfigOptions.DECORATOR_EXCLUDE,
+                Collections.singletonList(
+                        "org.apache.flink.kubernetes.kubeclient.decorators.KerberosMountDecorator"));
+
+        KubernetesTaskManagerParameters parameters =
+                new KubernetesTaskManagerParameters(
+                        confCopy,
+                        POD_NAME,
+                        DYNAMIC_PROPERTIES,
+                        JVM_MEM_OPTS_ENV,
+                        containeredTaskManagerParameters,
+                        ExternalResourceUtils.getExternalResourceConfigurationKeys(
+                                flinkConfig,
+                                KubernetesConfigOptions
+                                        .EXTERNAL_RESOURCE_KUBERNETES_CONFIG_KEY_SUFFIX),
+                        BLOCKED_NODES);
+
+        KubernetesTaskManagerFactory.buildTaskManagerKubernetesPod(
+                new FlinkPod.Builder().build(), parameters);
     }
 }

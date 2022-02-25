@@ -29,9 +29,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.apache.flink.kubernetes.configuration.KubernetesConfigOptions.CONTAINER_IMAGE_PULL_SECRETS;
 import static org.apache.flink.kubernetes.utils.Constants.CONFIG_FILE_LOG4J_NAME;
@@ -205,5 +207,13 @@ public abstract class AbstractKubernetesParameters implements KubernetesParamete
 
     public boolean isHostNetworkEnabled() {
         return flinkConfig.getBoolean(KubernetesConfigOptions.KUBERNETES_HOSTNETWORK_ENABLED);
+    }
+
+    @Override
+    public Set<String> getExcludedDecoratorClasses() {
+        return new HashSet<>(
+                flinkConfig
+                        .getOptional(KubernetesConfigOptions.DECORATOR_EXCLUDE)
+                        .orElse(Collections.emptyList()));
     }
 }

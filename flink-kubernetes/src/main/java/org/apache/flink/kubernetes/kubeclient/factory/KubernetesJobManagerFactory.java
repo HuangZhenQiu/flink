@@ -47,6 +47,7 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -75,7 +76,13 @@ public class KubernetesJobManagerFactory {
                     new PodTemplateMountDecorator(kubernetesJobManagerParameters)
                 };
 
+        Set<String> excludedDecorators =
+                kubernetesJobManagerParameters.getExcludedDecoratorClasses();
+
         for (KubernetesStepDecorator stepDecorator : stepDecorators) {
+            if (excludedDecorators.contains(stepDecorator.getClass().getName())) {
+                continue;
+            }
             flinkPod = stepDecorator.decorateFlinkPod(flinkPod);
             accompanyingResources.addAll(stepDecorator.buildAccompanyingKubernetesResources());
         }

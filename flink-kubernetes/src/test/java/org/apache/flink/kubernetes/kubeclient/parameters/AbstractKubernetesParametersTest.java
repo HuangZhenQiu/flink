@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 import static org.apache.flink.core.testutils.FlinkAssertions.anyCauseMatches;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -192,6 +193,11 @@ public class AbstractKubernetesParametersTest {
         @Override
         public List<Map<String, String>> getTolerations() {
             throw new UnsupportedOperationException("NOT supported");
+        }
+
+        @Override
+        public Set<String> getExcludedDecoratorClasses() {
+            return Collections.emptySet();
         }
     }
 }

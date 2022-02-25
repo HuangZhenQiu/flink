@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A common collection of parameters that is used to construct the JobManager/TaskManager Pods,
@@ -110,4 +111,6 @@ public interface KubernetesParameters {
      * container(s).
      */
     List<Map<String, String>> getEnvironmentsFromSecrets();
+
+    Set<String> getExcludedDecoratorClasses();
 }

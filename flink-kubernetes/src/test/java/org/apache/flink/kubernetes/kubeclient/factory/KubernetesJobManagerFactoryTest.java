@@ -18,6 +18,8 @@
 
 package org.apache.flink.kubernetes.kubeclient.factory;
 
+import org.apache.flink.client.deployment.ClusterSpecification;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.configuration.HighAvailabilityOptions;
 import org.apache.flink.configuration.SecurityOptions;
@@ -34,6 +36,7 @@ import org.apache.flink.kubernetes.kubeclient.decorators.FlinkConfMountDecorator
 import org.apache.flink.kubernetes.kubeclient.decorators.HadoopConfMountDecorator;
 import org.apache.flink.kubernetes.kubeclient.decorators.InternalServiceDecorator;
 import org.apache.flink.kubernetes.kubeclient.decorators.KerberosMountDecorator;
+import org.apache.flink.kubernetes.kubeclient.parameters.KubernetesJobManagerParameters;
 import org.apache.flink.kubernetes.kubeclient.services.HeadlessClusterIPService;
 import org.apache.flink.kubernetes.utils.Constants;
 import org.apache.flink.kubernetes.utils.KubernetesUtils;
@@ -349,7 +352,40 @@ class KubernetesJobManagerFactoryTest extends KubernetesJobManagerTestBase {
     }
 
     @Test
-    void testFlinkConfConfigMap() throws IOException {
+    public void testDecoratorExclusion() throws IOException {
+        Configuration confCopy = new Configuration(flinkConfig);
+        confCopy.set(SecurityOptions.KERBEROS_LOGIN_KEYTAB, "missing.file");
+        confCopy.set(
+                KubernetesConfigOptions.DECORATOR_EXCLUDE,
+                Collections.singletonList(
+                        "org.apache.flink.kubernetes.kubeclient.decorators.KerberosMountDecorator"));
+        kubernetesJobManagerSpecification =
+                KubernetesJobManagerFactory.buildKubernetesJobManagerSpecification(
+                        flinkPod,
+                        new KubernetesJobManagerParameters(
+                                confCopy,
+                                new ClusterSpecification.ClusterSpecificationBuilder()
+                                        .setMasterMemoryMB(1024)
+                                        .setTaskManagerMemoryMB(1024)
+                                        .setSlotsPerTaskManager(3)
+                                        .createClusterSpecification()));
+
+        boolean kerbSecretExists =
+                this.kubernetesJobManagerSpecification.getAccompanyingResources().stream()
+                        .anyMatch(
+                                x ->
+                                        x instanceof Secret
+                                                && x.getMetadata()
+                                                        .getName()
+                                                        .equals(
+                                                                KerberosMountDecorator
+                                                                        .getKerberosKeytabSecretName(
+                                                                                CLUSTER_ID)));
+        assertThat(kerbSecretExists).isEqualTo(false);
+    }
+
+    @Test
+    public void testFlinkConfConfigMap() throws IOException {
         kubernetesJobManagerSpecification =
                 KubernetesJobManagerFactory.buildKubernetesJobManagerSpecification(
                         flinkPod, kubernetesJobManagerParameters);

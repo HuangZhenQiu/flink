@@ -34,6 +34,8 @@ import org.apache.flink.util.Preconditions;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 
+import java.util.Set;
+
 /** Utility class for constructing the TaskManager Pod on the JobManager. */
 public class KubernetesTaskManagerFactory {
 
@@ -52,7 +54,13 @@ public class KubernetesTaskManagerFactory {
                     new FlinkConfMountDecorator(kubernetesTaskManagerParameters)
                 };
 
+        Set<String> excludedDecorators =
+                kubernetesTaskManagerParameters.getExcludedDecoratorClasses();
+
         for (KubernetesStepDecorator stepDecorator : stepDecorators) {
+            if (excludedDecorators.contains(stepDecorator.getClass().getName())) {
+                continue;
+            }
             flinkPod = stepDecorator.decorateFlinkPod(flinkPod);
         }
 

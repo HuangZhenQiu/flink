@@ -530,6 +530,14 @@ public class KubernetesConfigOptions {
                             "The node label whose value is the same as the node name. "
                                     + "Currently, this will only be used to set the node affinity of TM pods to avoid being scheduled on blocked nodes.");
 
+    public static final ConfigOption<List<String>> DECORATOR_EXCLUDE =
+            key("kubernetes.decorator.exclude")
+                    .stringType()
+                    .asList()
+                    .noDefaultValue()
+                    .withDescription(
+                            "A semicolon-separated list of the Kubernetes step decorator class names to be excluded from the JM/TM factories");
+
     private static String getDefaultFlinkImage() {
         // The default container image that ties to the exact needed versions of both Flink and
         // Scala.
