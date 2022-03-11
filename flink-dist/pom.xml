@@ -183,6 +183,13 @@ under the License.
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>com.apple.jvm.commons.commons-logging</groupId>
+			<artifactId>structured-layout-log4j2</artifactId>
+			<version>${apple-commons-logging.version}</version>
+			<scope>compile</scope>
+		</dependency>
+
 		<!-- Table dependencies -->
 
 		<dependency>
