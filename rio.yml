@@ -17,8 +17,8 @@ pipelines:
         # must exclude maven-metadata.xml
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
         # Prepare for docker image build
-        - cd flink-dist/target/flink-*-bin/; tar cvzf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/; ls -la /workspace/apple/docker/
-        - cd /workspace/apple/docker; wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz; cd /workspace
+        - pushd flink-dist/target/flink-*-bin/; tar czf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/; popd
+        - pushd /workspace/apple/docker; wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz; popd
     package:
       # enable for release (non -SNAPSHOT) builds
       # release: true
@@ -40,6 +40,30 @@ pipelines:
           extraTags: [ "latest", "0-latest" ]
           publish:
             - repo: docker.apple.com/acs-flink/flink-1.15-acs-hadoop
+
+  - name: binary-release-1.15-acs
+    branchName: release-1.15-acs
+    machine:
+      baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+    build:
+      template: freestyle:v4:publish
+      steps:
+        - cd /workspace
+        - VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+        - TIMESTAMP="$(date +"%Y%m%d.%H%M%S")"
+        - TIMED_VERSION=$(echo $VERSION | sed "s/SNAPSHOT/$TIMESTAMP/")
+        - mvn clean install -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -Dfast
+        # see https://docs.aci.apple.com/rio/guide-to-rio/package-and-publish/freeform.html
+        # must exclude maven-metadata.xml
+        # Prepare for docker image build
+        - pushd flink-dist/target/flink-*-bin/; tar czf flink-$TIMED_VERSION.tgz flink-*; cp flink-$TIMED_VERSION.tgz /workspace/; popd
+        - ci stage-lib "flink-$TIMED_VERSION.tgz,snapshot/org/apache/flink/flink-dist/$VERSION/"
+    package:
+      # enable for release (non -SNAPSHOT) builds
+      # release: true
+      freeform:
+        - publish:
+            - repo: oss-patched-binaries-local
 
   - name: pull-request-release-1.15-acs
     branchName: release-1.15-acs
