@@ -1,0 +1,70 @@
+diff --git a/rio.yml b/rio.yml
+index c5d8c8e6adf..e647cf3949f 100644
+--- a/rio.yml
++++ b/rio.yml
+@@ -3,8 +3,8 @@ timeout: 120
+
+ pipelines:
+   # Pipeline to build Flink from Apple branch.
+-  - name: publish-${BRANCH_NAME}
+-    branchName: ${BRANCH_NAME}
++  - name: publish-release-${RELEASE_VERSION}
++    branchName: release-${RELEASE_VERSION}
+     machine:
+       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+     build:
+@@ -21,7 +21,7 @@ pipelines:
+         - pushd /workspace/apple/docker; wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz; popd
+     package:
+       # enable for release (non -SNAPSHOT) builds
+-      # release: true
++      release: true
+       freeform:
+         - publish:
+             - repo: m2:oss-patched
+@@ -29,20 +29,18 @@ pipelines:
+         - dockerfilePath: apple/docker/Dockerfile.base
+           context: apple/docker/
+           perApplication: false
+-          version: "${PATCH_VERSION}-r${RIO_BUILD_NUMBER}"
+-          extraTags: [ "latest", "${PATCH_VERSION}-latest" ]
++          version: "${PATCH_VERSION}.${ACS_VERSION}"
+           publish:
+             - repo: docker.apple.com/acs-flink/flink-1.${MINOR_VERSION}-acs
+         - dockerfilePath: apple/docker/Dockerfile.hadoop
+           context: apple/docker/
+           perApplication: false
+-          version: "${PATCH_VERSION}-r${RIO_BUILD_NUMBER}"
+-          extraTags: [ "latest", "${PATCH_VERSION}-latest" ]
++          version: "${PATCH_VERSION}.${ACS_VERSION}"
+           publish:
+             - repo: docker.apple.com/acs-flink/flink-1.${MINOR_VERSION}-acs-hadoop
+
+-  - name: binary-${BRANCH_NAME}
+-    branchName: ${BRANCH_NAME}
++  - name: binary-release-${RELEASE_VERSION}
++    branchName: release-${RELEASE_VERSION}
+     machine:
+       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+     build:
+@@ -60,19 +58,7 @@ pipelines:
+         - ci stage-lib "flink-$TIMED_VERSION.tgz,snapshot/org/apache/flink/flink-dist/$VERSION/"
+     package:
+       # enable for release (non -SNAPSHOT) builds
+-      # release: true
++      release: true
+       freeform:
+         - publish:
+             - repo: oss-patched-binaries-local
+-
+-  - name: pull-request-${BRANCH_NAME}
+-    branchName: ${BRANCH_NAME}
+-    timeout: 600
+-    machine:
+-      baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+-    build:
+-      template: freestyle:v4:prb
+-      steps:
+-        - cd /workspace
+-        - rm -rf .staged-artifacts
+-        - mvn clean package -Phive-3.1.3.0-apple,s3-plugin -Dscala-2.12 -Dmaven.test.failure.ignore=true
