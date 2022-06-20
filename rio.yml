@@ -29,15 +29,15 @@ pipelines:
         - dockerfilePath: apple/docker/Dockerfile.base
           context: apple/docker/
           perApplication: false
-          version: "0-r${RIO_BUILD_NUMBER}"
-          extraTags: [ "latest", "0-latest" ]
+          version: "1-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "latest", "1-latest" ]
           publish:
             - repo: docker.apple.com/acs-flink/flink-1.15-acs
         - dockerfilePath: apple/docker/Dockerfile.hadoop
           context: apple/docker/
           perApplication: false
-          version: "0-r${RIO_BUILD_NUMBER}"
-          extraTags: [ "latest", "0-latest" ]
+          version: "1-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "latest", "1-latest" ]
           publish:
             - repo: docker.apple.com/acs-flink/flink-1.15-acs-hadoop
 

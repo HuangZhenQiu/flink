@@ -15,8 +15,8 @@ To use it, change to the `apple` directory, edit the `create_release_branch.sh` 
 What you need to edit:
 ```
 MAJOR_VERSION=1
-MINOR_VERSION=14
-PATCH_VERSION=5
+MINOR_VERSION=15
+PATCH_VERSION=1
 ACS_VERSION=0
 ```
 
