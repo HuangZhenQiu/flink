@@ -2041,7 +2041,7 @@ public class StreamExecutionEnvironment implements AutoCloseable {
     public JobExecutionResult execute(String jobName) throws Exception {
         final List<Transformation<?>> originalTransformations = new ArrayList<>(transformations);
         StreamGraph streamGraph = getStreamGraph();
-        if (jobName != null) {
+        if (!configuration.contains(PipelineOptions.NAME) && jobName != null) {
             streamGraph.setJobName(jobName);
         }
 
