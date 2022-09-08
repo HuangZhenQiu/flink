@@ -25,13 +25,13 @@ wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar
 Create the base image as follows, optionally replace it with your own version tag.
 
 ```bash
-docker build . -f Dockerfile.base -t docker.apple.com/acs-flink/flink:1.14.3.1-apple
+DOCKER_BUILDKIT=1 docker build . -f Dockerfile --target base -t docker.apple.com/acs-flink/flink:1.15.2.0-apple
 ```
 
 Create the Hadoop image as follows:
 
 ```bash
-docker build . -f Dockerfile.hadoop -t docker.apple.com/acs-flink/flink:1.14.3.1-apple-hadoop
+DOCKER_BUILDKIT=1 docker build . -f Dockerfile --target hadoop -t docker.apple.com/acs-flink/flink:1.15.2.0-apple-hadoop
 ```
 
 These images are regularly published via our Rio CI pipeline.

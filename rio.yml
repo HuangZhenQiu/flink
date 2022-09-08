@@ -7,6 +7,8 @@ pipelines:
     branchName: release-1.15-acs
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+      env:
+        DOCKER_BUILDKIT: "1"
     build:
       template: freestyle:v4:publish
       steps:
@@ -26,14 +28,16 @@ pipelines:
         - publish:
             - repo: m2:oss-patched
       dockerfile:
-        - dockerfilePath: apple/docker/Dockerfile.base
+        - dockerfilePath: apple/docker/Dockerfile
+          target: base
           context: apple/docker/
           perApplication: false
           version: "1-r${RIO_BUILD_NUMBER}"
           extraTags: [ "latest", "1-latest" ]
           publish:
             - repo: docker.apple.com/acs-flink/flink-1.15-acs
-        - dockerfilePath: apple/docker/Dockerfile.hadoop
+        - dockerfilePath: apple/docker/Dockerfile
+          target: hadoop
           context: apple/docker/
           perApplication: false
           version: "1-r${RIO_BUILD_NUMBER}"

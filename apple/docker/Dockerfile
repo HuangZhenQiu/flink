@@ -1,4 +1,4 @@
-FROM docker.apple.com/base-images/ubi8-minimal/java11-runtime
+FROM docker.apple.com/base-images/ubi8-minimal/java11-runtime as base
 
 USER root
 # Install dependencies
@@ -7,7 +7,6 @@ RUN set -ex; \
 
 # Suboptimal fix for missing libjemalloc.so from LD_PRELOAD
 RUN rpm -ivh https://download-ib01.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/j/jemalloc-5.2.1-2.el8.x86_64.rpm
-RUN microdnf -y install jemalloc
 RUN mkdir -p /usr/lib/x86_64-linux-gnu/
 RUN ln -s /usr/lib64/libjemalloc.so.2 /usr/lib/x86_64-linux-gnu/libjemalloc.so
 
@@ -30,7 +29,6 @@ RUN set -ex; \
   chmod +x /usr/local/bin/gosu; \
   gosu nobody true
 
-
 # Prepare environment
 ENV FLINK_HOME=/opt/flink
 ENV PATH=$FLINK_HOME/bin:$PATH
@@ -45,6 +43,41 @@ RUN set -ex; \
   rm flink.tgz; \
   \
   chown -R flink:flink .;
+
+# Configure container
+COPY docker-entrypoint.sh /
+ENTRYPOINT ["/docker-entrypoint.sh"]
+EXPOSE 6123 8081
+CMD ["help"]
+
+FROM base as hadoop
+
+ENV HADOOP_USER hdfs
+ENV HADOOP_PREFIX /usr/local/hadoop-3.3.1
+ENV HADOOP_COMMON_HOME /usr/local/hadoop-3.3.1
+ENV HADOOP_HDFS_HOME /usr/local/hadoop-3.3.1
+ENV HADOOP_CONF_DIR /usr/local/hadoop-3.3.1/etc/hadoop
+
+# Download hadoop
+COPY hadoop-3.3.1.tar.gz /usr/local/
+RUN set -ex; \
+      cd /usr/local/; \
+      tar -xvf hadoop-3.3.1.tar.gz; \
+      rm hadoop-3.3.1.tar.gz
+
+RUN ln -s /usr/local/hadoop-3.1.1 /usr/local/hadoop \
+&& groupadd -r hadoop \
+&& groupadd -r $HADOOP_USER && useradd -r -g $HADOOP_USER -G hadoop $HADOOP_USER
+
+# RUN mkdir -p $HADOOP_CONF_DIR
+
+# Setup permissions and ownership
+RUN chown -R $HADOOP_USER:hadoop /usr/local/hadoop-3.3.1 # && chmod -R 775 $HADOOP_CONF_DIR
+
+# Set up hadoop user and bin path
+ENV HADOOP_USER_NAME $HADOOP_USER
+ENV PATH="${HADOOP_PREFIX}/bin:${PATH}"
+ENV HADOOP_CLASSPATH="/usr/local/hadoop-3.3.1/etc/hadoop:/usr/local/hadoop-3.3.1/share/hadoop/common/lib/*:/usr/local/hadoop-3.3.1/share/hadoop/common/*:/usr/local/hadoop-3.3.1/share/hadoop/hdfs:/usr/local/hadoop-3.3.1/share/hadoop/hdfs/lib/*:/usr/local/hadoop-3.3.1/share/hadoop/hdfs/*:/usr/local/hadoop-3.3.1/share/hadoop/mapreduce/*:/usr/local/hadoop-3.3.1/share/hadoop/yarn:/usr/local/hadoop-3.3.1/share/hadoop/yarn/lib/*:/usr/local/hadoop-3.3.1/share/hadoop/yarn/*"
 
 # Configure container
 COPY docker-entrypoint.sh /
