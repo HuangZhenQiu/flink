@@ -52,32 +52,36 @@ CMD ["help"]
 
 FROM base as hadoop
 
+ENV HADOOP_VERSION 3.3.3
+ENV HADOOP_APPLE_VERSION 2
+ENV HADOOP_TGZ_DIRECTORY hadoop-$HADOOP_VERSION.$HADOOP_APPLE_VERSION-apple
+ENV HADOOP_TGZ_FILE $HADOOP_TGZ_DIRECTORY.tar.gz
 ENV HADOOP_USER hdfs
-ENV HADOOP_PREFIX /usr/local/hadoop-3.3.1
-ENV HADOOP_COMMON_HOME /usr/local/hadoop-3.3.1
-ENV HADOOP_HDFS_HOME /usr/local/hadoop-3.3.1
-ENV HADOOP_CONF_DIR /usr/local/hadoop-3.3.1/etc/hadoop
+ENV HADOOP_PREFIX /usr/local/hadoop-$HADOOP_VERSION
+ENV HADOOP_COMMON_HOME /usr/local/hadoop-$HADOOP_VERSION
+ENV HADOOP_HDFS_HOME /usr/local/hadoop-$HADOOP_VERSION
+ENV HADOOP_CONF_DIR /usr/local/hadoop-$HADOOP_VERSION/etc/hadoop
 
 # Download hadoop
-COPY hadoop-3.3.1.tar.gz /usr/local/
+COPY $HADOOP_TGZ_FILE /usr/local/
 RUN set -ex; \
       cd /usr/local/; \
-      tar -xvf hadoop-3.3.1.tar.gz; \
-      rm hadoop-3.3.1.tar.gz
+      tar -xvf $HADOOP_TGZ_FILE; \
+      rm $HADOOP_TGZ_FILE
 
-RUN ln -s /usr/local/hadoop-3.1.1 /usr/local/hadoop \
+RUN ln -s /usr/local/$HADOOP_TGZ_DIRECTORY /usr/local/hadoop \
 && groupadd -r hadoop \
 && groupadd -r $HADOOP_USER && useradd -r -g $HADOOP_USER -G hadoop $HADOOP_USER
 
 # RUN mkdir -p $HADOOP_CONF_DIR
 
 # Setup permissions and ownership
-RUN chown -R $HADOOP_USER:hadoop /usr/local/hadoop-3.3.1 # && chmod -R 775 $HADOOP_CONF_DIR
+RUN chown -R $HADOOP_USER:hadoop /usr/local/$HADOOP_TGZ_DIRECTORY # && chmod -R 775 $HADOOP_CONF_DIR
 
 # Set up hadoop user and bin path
 ENV HADOOP_USER_NAME $HADOOP_USER
 ENV PATH="${HADOOP_PREFIX}/bin:${PATH}"
-ENV HADOOP_CLASSPATH="/usr/local/hadoop-3.3.1/etc/hadoop:/usr/local/hadoop-3.3.1/share/hadoop/common/lib/*:/usr/local/hadoop-3.3.1/share/hadoop/common/*:/usr/local/hadoop-3.3.1/share/hadoop/hdfs:/usr/local/hadoop-3.3.1/share/hadoop/hdfs/lib/*:/usr/local/hadoop-3.3.1/share/hadoop/hdfs/*:/usr/local/hadoop-3.3.1/share/hadoop/mapreduce/*:/usr/local/hadoop-3.3.1/share/hadoop/yarn:/usr/local/hadoop-3.3.1/share/hadoop/yarn/lib/*:/usr/local/hadoop-3.3.1/share/hadoop/yarn/*"
+ENV HADOOP_CLASSPATH="/usr/local/hadoop/etc/hadoop:/usr/local/hadoop/share/hadoop/common/lib/*:/usr/local/hadoop/share/hadoop/common/*:/usr/local/hadoop/share/hadoop/hdfs:/usr/local/hadoop/share/hadoop/hdfs/lib/*:/usr/local/hadoop/share/hadoop/hdfs/*:/usr/local/hadoop/share/hadoop/mapreduce/*:/usr/local/hadoop/share/hadoop/yarn:/usr/local/hadoop/share/hadoop/yarn/lib/*:/usr/local/hadoop/share/hadoop/yarn/*"
 
 # Configure container
 COPY docker-entrypoint.sh /

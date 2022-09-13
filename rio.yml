@@ -20,7 +20,7 @@ pipelines:
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
         # Prepare for docker image build
         - pushd flink-dist/target/flink-*-bin/; tar czf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/; popd
-        - pushd /workspace/apple/docker; wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz; popd
+        - pushd /workspace/apple/docker; wget https://artifacts.apple.com/artifactory/oss-patched-binaries-local/org/apache/hadoop/3.3.3.2-apple/hadoop-3.3.3.2-apple.tar.gz; popd
     package:
       # enable for release (non -SNAPSHOT) builds
       # release: true

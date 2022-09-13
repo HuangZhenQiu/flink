@@ -17,7 +17,7 @@ popd
 For the Hadoop image download the Hadoop distro:
 
 ```bash
-wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
+wget https://artifacts.apple.com/artifactory/oss-patched-binaries-local/org/apache/hadoop/3.3.3.2-apple/hadoop-3.3.3.2-apple.tar.gz
 ```
 
 ## Build
