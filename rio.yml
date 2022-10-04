@@ -3,8 +3,8 @@ timeout: 120
 
 pipelines:
   # Pipeline to build Flink from Apple branch.
-  - name: publish-release-1.15-acs
-    branchName: release-1.15-acs
+  - name: publish-release-1.16-acs
+    branchName: release-1.16-acs
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
       env:
@@ -35,7 +35,7 @@ pipelines:
           version: "1-r${RIO_BUILD_NUMBER}"
           extraTags: [ "latest", "1-latest" ]
           publish:
-            - repo: docker.apple.com/acs-flink/flink-1.15-acs
+            - repo: docker.apple.com/acs-flink/flink-1.16-acs
         - dockerfilePath: apple/docker/Dockerfile
           target: hadoop
           context: apple/docker/
@@ -43,10 +43,10 @@ pipelines:
           version: "1-r${RIO_BUILD_NUMBER}"
           extraTags: [ "latest", "1-latest" ]
           publish:
-            - repo: docker.apple.com/acs-flink/flink-1.15-acs-hadoop
+            - repo: docker.apple.com/acs-flink/flink-1.16-acs-hadoop
 
-  - name: binary-release-1.15-acs
-    branchName: release-1.15-acs
+  - name: binary-release-1.16-acs
+    branchName: release-1.16-acs
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
     build:
@@ -69,8 +69,8 @@ pipelines:
         - publish:
             - repo: oss-patched-binaries-local
 
-  - name: pull-request-release-1.15-acs
-    branchName: release-1.15-acs
+  - name: pull-request-release-1.16-acs
+    branchName: release-1.16-acs
     timeout: 600
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest

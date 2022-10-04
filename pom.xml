@@ -1610,6 +1610,10 @@ under the License.
 
 						<!-- AWS SDK config that does not support license headers -->
 						<exclude>**/awssdk/global/handlers/execution.interceptors</exclude>
+
+						<!-- Apple Internal -->
+						<exclude>apple/**</exclude>
+						<exclude>rio.yml</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

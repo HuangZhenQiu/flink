@@ -35,7 +35,7 @@ under the License.
 	<properties>
 		<zookeeper.optional.version>3.6.3</zookeeper.optional.version>
 		<japicmp.skip>true</japicmp.skip>
-		<acs.flink.libs.version>1.15-SNAPSHOT</acs.flink.libs.version>
+		<acs.flink.libs.version>1.16-SNAPSHOT</acs.flink.libs.version>
 	</properties>
 
 	<dependencies>
