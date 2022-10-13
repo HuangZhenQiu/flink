@@ -18,6 +18,17 @@ MAJOR_VERSION=1
 MINOR_VERSION=15
 PATCH_VERSION=1
 ACS_VERSION=0
+# BCC = binary compatibility check
+# BCC version must be the previous patch version of a release
+BCC_MAJOR_VERSION=1
+BCC_MINOR_VERSION=15
+BCC_PATCH_VERSION=0
+BCC_ACS_VERSION=0
 ```
 
 The script assumes you are currently on the branch `release-$MAJOR_VERSION.$MINOR_VERSION-acs` and the current snapshot version is `$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-acs-SNAPSHOT`.
+
+Binary compatibility is enforced between patch releases from version `1.15.2.2-acs`.
+This effectively means binary compatibility will be checked between the following versions:
+* $MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION.$ACS_VERSION-acs
+* $BCC_MAJOR_VERSION.$BCC_MINOR_VERSION.$BCC_PATCH_VERSION.$BCC_ACS_VERSION-acs

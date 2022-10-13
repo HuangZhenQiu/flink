@@ -22,12 +22,18 @@ MAJOR_VERSION=1
 MINOR_VERSION=15
 PATCH_VERSION=1
 ACS_VERSION=0
+# BCC = binary compatibility check
+# BCC version must be the previous patch version of a release
+BCC_MAJOR_VERSION=1
+BCC_MINOR_VERSION=15
+BCC_PATCH_VERSION=0
+BCC_ACS_VERSION=0
 
 OLD="$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-acs-SNAPSHOT"
 RELEASE_VERSION="$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION.$ACS_VERSION-acs"
-BRANCH_NAME="release-$MAJOR_VERSION.$MINOR_VERSION-acs"
+BCC_RELEASE_VERSION="$BCC_MAJOR_VERSION.$BCC_MINOR_VERSION.$BCC_PATCH_VERSION.$BCC_ACS_VERSION-acs"
 
-HERE=` basename "$PWD"`
+HERE=$(basename "$PWD")
 if [[ "$HERE" != "apple" ]]; then
     echo "Please only execute in the apple/ directory";
     exit 1;
@@ -41,10 +47,15 @@ find .. -name 'pom.xml' -type f -exec perl -pi -e 's#<version>'"$OLD"'</version>
 # change version of the quickstart property
 find .. -name 'pom.xml' -type f -exec perl -pi -e 's#<flink.version>'"$OLD"'</flink.version>#<flink.version>'"$RELEASE_VERSION"'</flink.version>#' {} \;
 
-git commit -am"[apple][release] Set release version to $RELEASE_VERSION"
+git commit -am"[apple][release] Set release version to $RELEASE_VERSION with binary compatibility to $BCC_RELEASE_VERSION"
 
 cd ..
-sed -e "s/\${MINOR_VERSION}/${MINOR_VERSION}/" -e "s/\${PATCH_VERSION}/${PATCH_VERSION}/" -e "s/\${ACS_VERSION}/${ACS_VERSION}/" -e "s/\${RELEASE_VERSION}/${RELEASE_VERSION}/" -e "s/\${BRANCH_NAME}/${BRANCH_NAME}/"  apple/release_rio_bump.patch.template | git apply
+
+# change binary compatibility reference version in root pom file
+sed -i -e 's#<japicmp.referenceVersion>.*</japicmp.referenceVersion>#<japicmp.referenceVersion>'"$BCC_RELEASE_VERSION"'</japicmp.referenceVersion>#' pom.xml
+rm -f pom.xml-e
+
+apple/update_rio_for_release.py "${RELEASE_VERSION}"
 
 git commit -am"[apple][release] Update rio.yaml for $RELEASE_VERSION"
 cd apple
