@@ -32,18 +32,18 @@ pipelines:
           target: base
           context: apple/docker/
           perApplication: false
-          version: "1-r${RIO_BUILD_NUMBER}"
-          extraTags: [ "latest", "1-latest" ]
+          version: "1.16.0-acs-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "1.16-acs-latest", "1.16.0-acs-latest" ]
           publish:
-            - repo: docker.apple.com/acs-flink/flink-1.16-acs
+            - repo: docker.apple.com/acs-flink/flink
         - dockerfilePath: apple/docker/Dockerfile
           target: hadoop
           context: apple/docker/
           perApplication: false
-          version: "1-r${RIO_BUILD_NUMBER}"
-          extraTags: [ "latest", "1-latest" ]
+          version: "1.16.0-acs-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "1.16-acs-latest", "1.16.0-acs-latest" ]
           publish:
-            - repo: docker.apple.com/acs-flink/flink-1.16-acs-hadoop
+            - repo: docker.apple.com/acs-flink/flink-hadoop
 
   - name: binary-release-1.16-acs
     branchName: release-1.16-acs
