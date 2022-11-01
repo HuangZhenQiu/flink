@@ -25,6 +25,7 @@ import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.typeutils.runtime.TupleSerializer;
 import org.apache.flink.streaming.runtime.operators.CheckpointCommitter;
 import org.apache.flink.streaming.runtime.operators.GenericWriteAheadSink;
+import org.apache.flink.util.concurrent.Executors;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
@@ -32,8 +33,8 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.FutureCallback;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.Futures;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -149,7 +150,7 @@ public class CassandraTupleWriteAheadSink<IN extends Tuple> extends GenericWrite
             updatesSent++;
             if (result != null) {
                 // add callback to detect errors
-                Futures.addCallback(result, callback);
+                Futures.addCallback(result, callback, Executors.directExecutor());
             }
         }
         updatesCount.set(updatesSent);

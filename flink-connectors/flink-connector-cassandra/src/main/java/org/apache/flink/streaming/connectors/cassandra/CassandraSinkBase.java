@@ -27,12 +27,14 @@ import org.apache.flink.runtime.state.FunctionSnapshotContext;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.FutureCallback;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.Futures;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +69,7 @@ public abstract class CassandraSinkBase<IN, V> extends RichSinkFunction<IN>
     protected transient Session session;
 
     private AtomicReference<Throwable> throwable;
-    private FutureCallback<V> callback;
+    private FutureCallback<ResultSet> callback;
     private Semaphore semaphore;
 
     private final ClusterBuilder builder;
@@ -88,9 +90,9 @@ public abstract class CassandraSinkBase<IN, V> extends RichSinkFunction<IN>
     @Override
     public void open(Configuration configuration) {
         this.callback =
-                new FutureCallback<V>() {
+                new FutureCallback<ResultSet>() {
                     @Override
-                    public void onSuccess(V ignored) {
+                    public void onSuccess(ResultSet ignored) {
                         semaphore.release();
                     }
 
@@ -146,21 +148,21 @@ public abstract class CassandraSinkBase<IN, V> extends RichSinkFunction<IN>
     public void invoke(IN value) throws Exception {
         checkAsyncErrors();
         tryAcquire(1);
-        final ListenableFuture<V> result;
+        final ListenableFuture<ResultSet> result;
         try {
             result = send(value);
         } catch (Throwable e) {
             semaphore.release();
             throw e;
         }
-        Futures.addCallback(result, callback);
+        Futures.addCallback(result, callback, Executors.directExecutor());
     }
 
     protected Session createSession() {
         return cluster.connect();
     }
 
-    public abstract ListenableFuture<V> send(IN value);
+    public abstract ListenableFuture<ResultSet> send(IN value);
 
     private void tryAcquire(int permits) throws InterruptedException, TimeoutException {
         SinkUtils.tryAcquire(

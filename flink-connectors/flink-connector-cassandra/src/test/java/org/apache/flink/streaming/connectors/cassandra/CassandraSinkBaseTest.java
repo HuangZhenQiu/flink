@@ -30,7 +30,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.google.common.util.concurrent.ListenableFuture;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -69,7 +69,7 @@ public class CassandraSinkBaseTest {
                         CassandraSinkBaseConfig.newBuilder().build(),
                         new NoOpCassandraFailureHandler()) {
                     @Override
-                    public ListenableFuture send(Object value) {
+                    public ListenableFuture<ResultSet> send(Object value) {
                         return null;
                     }
                 };

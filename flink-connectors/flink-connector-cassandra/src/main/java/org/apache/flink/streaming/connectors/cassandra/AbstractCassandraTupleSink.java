@@ -22,7 +22,7 @@ import org.apache.flink.configuration.Configuration;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.google.common.util.concurrent.ListenableFuture;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * Abstract sink to write tuple-like values into a Cassandra cluster.

@@ -21,12 +21,13 @@ import org.apache.flink.api.common.io.OutputFormatBase;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.connectors.cassandra.ClusterBuilder;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.FutureCallback;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.Futures;
+import mme.cassandraclient.shaded.com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +105,10 @@ abstract class CassandraOutputFormatBase<OUT, V> extends OutputFormatBase<OUT, V
     protected static <T> CompletableFuture<T> listenableFutureToCompletableFuture(
             final ListenableFuture<T> listenableFuture) {
         CompletableFuture<T> completable = new CompletableFuture<T>();
-        Futures.addCallback(listenableFuture, new CompletableFutureCallback<>(completable));
+        Futures.addCallback(
+                listenableFuture,
+                new CompletableFutureCallback<>(completable),
+                Executors.directExecutor());
         return completable;
     }
 
