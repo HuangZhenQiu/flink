@@ -33,8 +33,8 @@ drop_privs_cmd() {
         # Alpine
         echo su-exec flink
     else
-        # Others
-        echo gosu flink
+        echo "run_as_root_user_not_supported"
+        exit 1
     fi
 }
 
