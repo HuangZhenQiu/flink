@@ -25,13 +25,13 @@ wget https://artifacts.apple.com/artifactory/oss-patched-binaries-local/org/apac
 Create the base image as follows, optionally replace it with your own version tag.
 
 ```bash
-DOCKER_BUILDKIT=1 docker build . -f Dockerfile --target base -t docker.apple.com/acs-flink/flink:1.15.2.0-apple
+DOCKER_BUILDKIT=1 docker build . -f Dockerfile --target base -t docker.apple.com/acs-flink/flink:1.15.2.0-acs
 ```
 
 Create the Hadoop image as follows:
 
 ```bash
-DOCKER_BUILDKIT=1 docker build . -f Dockerfile --target hadoop -t docker.apple.com/acs-flink/flink:1.15.2.0-apple-hadoop
+DOCKER_BUILDKIT=1 docker build . -f Dockerfile --target hadoop -t docker.apple.com/acs-flink/flink:1.15.2.0-acs-hadoop
 ```
 
 These images are regularly published via our Rio CI pipeline.

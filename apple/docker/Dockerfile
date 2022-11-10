@@ -1,3 +1,22 @@
+FROM docker.apple.com/base-images/ubi8/ubi AS builder
+
+# Env vars are not shared between stages
+ENV FLINK_HOME=/opt/flink
+ENV HADOOP_VERSION 3.3.3
+ENV HADOOP_APPLE_VERSION 2
+ENV HADOOP_TGZ_FILE hadoop-$HADOOP_VERSION.$HADOOP_APPLE_VERSION-apple.tar.gz
+ENV HADOOP_COMMON_HOME /usr/local/hadoop
+
+# Extract Flink
+RUN mkdir -p $FLINK_HOME
+COPY flink.tgz /tmp/flink.tgz
+RUN tar -xf /tmp/flink.tgz --strip-components=1 -C $FLINK_HOME
+
+# Extract Hadoop
+RUN mkdir -p $HADOOP_COMMON_HOME
+COPY $HADOOP_TGZ_FILE /tmp/hadoop.tgz
+RUN tar -xf /tmp/hadoop.tgz --strip-components=1 -C $HADOOP_COMMON_HOME
+
 FROM docker.apple.com/base-images/ubi8-minimal/java11-runtime as base
 
 USER root
@@ -34,15 +53,9 @@ ENV FLINK_HOME=/opt/flink
 ENV PATH=$FLINK_HOME/bin:$PATH
 RUN groupadd --system --gid=9999 flink && \
     /usr/sbin/useradd --system --home-dir $FLINK_HOME --uid=9999 --gid=flink flink
-WORKDIR $FLINK_HOME
 
 # Install Flink
-COPY flink.tgz $FLINK_HOME
-RUN set -ex; \
-  tar -xf flink.tgz --strip-components=1; \
-  rm flink.tgz; \
-  \
-  chown -R flink:flink .;
+COPY --from=builder --chown=flink:flink $FLINK_HOME $FLINK_HOME
 
 # Configure container
 COPY docker-entrypoint.sh /
@@ -52,37 +65,23 @@ CMD ["help"]
 
 FROM base as hadoop
 
-ENV HADOOP_VERSION 3.3.3
-ENV HADOOP_APPLE_VERSION 2
-ENV HADOOP_TGZ_DIRECTORY hadoop-$HADOOP_VERSION.$HADOOP_APPLE_VERSION-apple
-ENV HADOOP_TGZ_FILE $HADOOP_TGZ_DIRECTORY.tar.gz
-ENV HADOOP_USER hdfs
-ENV HADOOP_PREFIX /usr/local/hadoop-$HADOOP_VERSION
-ENV HADOOP_COMMON_HOME /usr/local/hadoop-$HADOOP_VERSION
-ENV HADOOP_HDFS_HOME /usr/local/hadoop-$HADOOP_VERSION
-ENV HADOOP_CONF_DIR /usr/local/hadoop-$HADOOP_VERSION/etc/hadoop
+ENV HADOOP_COMMON_HOME /usr/local/hadoop
+ENV HADOOP_CONF_DIR $HADOOP_COMMON_HOME/etc/hadoop
 
 # Download hadoop
-COPY $HADOOP_TGZ_FILE /usr/local/
-RUN set -ex; \
-      cd /usr/local/; \
-      tar -xvf $HADOOP_TGZ_FILE; \
-      rm $HADOOP_TGZ_FILE
-
-RUN ln -s /usr/local/$HADOOP_TGZ_DIRECTORY /usr/local/hadoop \
-&& groupadd -r hadoop \
-&& groupadd -r $HADOOP_USER && useradd -r -g $HADOOP_USER -G hadoop $HADOOP_USER
-
-# RUN mkdir -p $HADOOP_CONF_DIR
-
-# Setup permissions and ownership
-RUN chown -R $HADOOP_USER:hadoop /usr/local/$HADOOP_TGZ_DIRECTORY # && chmod -R 775 $HADOOP_CONF_DIR
+COPY --from=builder --chown=flink:flink /opt/hadoop $HADOOP_COMMON_HOME
 
 # Set up hadoop user and bin path
-ENV HADOOP_USER_NAME $HADOOP_USER
-ENV PATH="${HADOOP_PREFIX}/bin:${PATH}"
+ENV HADOOP_USER_NAME flink
+ENV PATH="${HADOOP_COMMON_HOME}/bin:${PATH}"
 ENV HADOOP_CLASSPATH="/usr/local/hadoop/etc/hadoop:/usr/local/hadoop/share/hadoop/common/lib/*:/usr/local/hadoop/share/hadoop/common/*:/usr/local/hadoop/share/hadoop/hdfs:/usr/local/hadoop/share/hadoop/hdfs/lib/*:/usr/local/hadoop/share/hadoop/hdfs/*:/usr/local/hadoop/share/hadoop/mapreduce/*:/usr/local/hadoop/share/hadoop/yarn:/usr/local/hadoop/share/hadoop/yarn/lib/*:/usr/local/hadoop/share/hadoop/yarn/*"
 
+<<<<<<< Updated upstream
+=======
+# Install Hadoop
+COPY --from=builder --chown=flink:flink $HADOOP_COMMON_HOME $HADOOP_COMMON_HOME
+
+>>>>>>> Stashed changes
 # Configure container
 COPY docker-entrypoint.sh /
 ENTRYPOINT ["/docker-entrypoint.sh"]
