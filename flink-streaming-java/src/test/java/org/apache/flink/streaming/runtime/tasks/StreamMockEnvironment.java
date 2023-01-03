@@ -92,7 +92,7 @@ public class StreamMockEnvironment implements Environment {
 
     private final List<IndexedInputGate> inputs;
 
-    private final List<ResultPartitionWriter> outputs;
+    private List<ResultPartitionWriter> outputs;
 
     private final JobID jobID;
 
@@ -401,5 +401,9 @@ public class StreamMockEnvironment implements Environment {
 
     public void setCheckpointResponder(CheckpointResponder checkpointResponder) {
         this.checkpointResponder = checkpointResponder;
+    }
+
+    public void setOutputs(List<ResultPartitionWriter> outputs) {
+        this.outputs = outputs;
     }
 }
