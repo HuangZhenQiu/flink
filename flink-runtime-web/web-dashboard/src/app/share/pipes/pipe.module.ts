@@ -20,7 +20,10 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 
 import { HumanizeBytesPipe } from '@flink-runtime-web/share/pipes/humanize-bytes.pipe';
-import { HumanizeWatermarkPipe } from '@flink-runtime-web/share/pipes/humanize-watermark.pipe';
+import {
+  HumanizeWatermarkPipe,
+  HumanizeWatermarkToDatetimePipe
+} from '@flink-runtime-web/share/pipes/humanize-watermark.pipe';
 
 import { HumanizeChartNumericPipe } from './humanize-chart-numeric.pipe';
 import { HumanizeDatePipe } from './humanize-date.pipe';
@@ -34,6 +37,7 @@ import { ParseIntPipe } from './parse-int.pipe';
     HumanizeDatePipe,
     HumanizeBytesPipe,
     HumanizeWatermarkPipe,
+    HumanizeWatermarkToDatetimePipe,
     ParseIntPipe,
     HumanizeChartNumericPipe
   ],
@@ -42,6 +46,7 @@ import { ParseIntPipe } from './parse-int.pipe';
     HumanizeDatePipe,
     HumanizeBytesPipe,
     HumanizeWatermarkPipe,
+    HumanizeWatermarkToDatetimePipe,
     HumanizeChartNumericPipe,
     ParseIntPipe
   ]

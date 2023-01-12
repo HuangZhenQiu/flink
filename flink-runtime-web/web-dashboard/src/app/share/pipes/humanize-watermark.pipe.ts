@@ -34,3 +34,18 @@ export class HumanizeWatermarkPipe implements PipeTransform {
     }
   }
 }
+
+@Pipe({
+  name: 'humanizeWatermarkToDatetime'
+})
+export class HumanizeWatermarkToDatetimePipe implements PipeTransform {
+  constructor(private readonly configService: ConfigService) {}
+
+  public transform(value: number): number | string {
+    if (isNaN(value) || value <= this.configService.LONG_MIN_VALUE) {
+      return '-';
+    } else {
+      return new Date(value).toLocaleString();
+    }
+  }
+}
