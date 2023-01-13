@@ -168,7 +168,7 @@ public class KafkaConnectorOptions {
     public static final ConfigOption<Duration> SCAN_TOPIC_PARTITION_DISCOVERY =
             ConfigOptions.key("scan.topic-partition-discovery.interval")
                     .durationType()
-                    .noDefaultValue()
+                    .defaultValue(Duration.ofMinutes(1))
                     .withDescription(
                             "Optional interval for consumer to discover dynamically created Kafka partitions periodically.");
 

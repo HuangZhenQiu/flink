@@ -23,6 +23,7 @@ import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /** Configurations for KafkaSource. */
@@ -38,7 +39,7 @@ public class KafkaSourceOptions {
     public static final ConfigOption<Long> PARTITION_DISCOVERY_INTERVAL_MS =
             ConfigOptions.key("partition.discovery.interval.ms")
                     .longType()
-                    .noDefaultValue()
+                    .defaultValue(TimeUnit.MINUTES.toMillis(1))
                     .withDescription(
                             "The interval in milliseconds for the Kafka source to discover "
                                     + "the new partitions. A non-positive value disables the partition discovery.");
