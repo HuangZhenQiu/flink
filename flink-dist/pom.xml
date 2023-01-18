@@ -346,6 +346,12 @@ under the License.
 			<artifactId>acs-flink-metrics-hubble</artifactId>
 			<version>${acs.flink.libs.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.apple.pie.flink</groupId>
+			<artifactId>acs-flink-metrics-mosaic</artifactId>
+			<version>${acs.flink.libs.version}</version>
+		</dependency>
 		<!-- end optional Flink metrics reporters -->
 
 		<!-- start optional Flink libraries -->
@@ -765,6 +771,7 @@ under the License.
 									<!-- Bundled separately so that users can easily switch between ZK 3.4/3.5-->
 									<exclude>org.apache.flink:flink-shaded-zookeeper-3</exclude>
 									<exclude>com.apple.pie.flink:acs-flink-metrics-hubble</exclude>
+									<exclude>com.apple.pie.flink:acs-flink-metrics-mosaic</exclude>
 								</excludes>
 							</artifactSet>
 						</configuration>

@@ -36,6 +36,13 @@
 				<include>com.apple.pie.flink:acs-flink-metrics-hubble</include>
 			</includes>
 		</dependencySet>
+		<dependencySet>
+			<outputDirectory>plugins/metrics-mosaic/</outputDirectory>
+			<unpack>false</unpack>
+			<includes>
+				<include>com.apple.pie.flink:acs-flink-metrics-mosaic</include>
+			</includes>
+		</dependencySet>
 	</dependencySets>
 
 	<files>
