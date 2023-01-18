@@ -650,6 +650,18 @@ public class JobManagerOptions {
                     .withDescription(
                             "The JobManager's ResourceID. If not configured, the ResourceID will be generated randomly.");
 
+    @Documentation.Section({
+        Documentation.Sections.EXPERT_SCHEDULING,
+        Documentation.Sections.ALL_JOB_MANAGER
+    })
+    public static final ConfigOption<Boolean> SLOT_ALLOCATE_ORDER_OPTIMIZATION =
+            key("jobmanager.scheduler.slot-allocation-optimization.enabled")
+                    .booleanType()
+                    .defaultValue(true)
+                    .withDescription(
+                            "Flag indicating whether to enable the slot allocation optimization for DefaultScheduler and AdaptiveScheduler. "
+                                    + "It will distribute subtasks across as many TaskManagers as possible.");
+
     // ---------------------------------------------------------------------------------------------
 
     private JobManagerOptions() {

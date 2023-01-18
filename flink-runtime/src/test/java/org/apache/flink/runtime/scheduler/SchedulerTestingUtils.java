@@ -315,7 +315,8 @@ public class SchedulerTestingUtils {
                 true,
                 new TestingPhysicalSlotRequestBulkChecker(),
                 allocationTimeout,
-                new LocalInputPreferredSlotSharingStrategy.Factory());
+                new LocalInputPreferredSlotSharingStrategy.Factory(),
+                false);
     }
 
     public static SchedulerBase createSchedulerAndDeploy(
