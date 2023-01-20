@@ -32,16 +32,16 @@ pipelines:
           target: base
           context: apple/docker/
           perApplication: false
-          version: "1.16.0-acs-r${RIO_BUILD_NUMBER}"
-          extraTags: [ "1.16-acs-latest", "1.16.0-acs-latest" ]
+          version: "1.16.1-acs-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "1.16-acs-latest", "1.16.1-acs-latest" ]
           publish:
             - repo: docker.apple.com/acs-flink/flink
         - dockerfilePath: apple/docker/Dockerfile
           target: hadoop
           context: apple/docker/
           perApplication: false
-          version: "1.16.0-acs-r${RIO_BUILD_NUMBER}"
-          extraTags: [ "1.16-acs-latest", "1.16.0-acs-latest" ]
+          version: "1.16.1-acs-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "1.16-acs-latest", "1.16.1-acs-latest" ]
           publish:
             - repo: docker.apple.com/acs-flink/flink-hadoop
 
