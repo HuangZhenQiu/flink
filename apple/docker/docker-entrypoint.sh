@@ -95,11 +95,20 @@ maybe_enable_jemalloc() {
     fi
 }
 
+# Use dot notation to source in the script file in the current shell i.e. without creating a sub-shell
+source_additional_file() {
+    if [ -f "$SOURCE_FILE" ]; then
+        . "${SOURCE_FILE}"
+    fi
+}
+
 maybe_enable_jemalloc
 
 copy_plugins_if_required
 
 prepare_configuration
+
+source_additional_file
 
 args=("$@")
 if [ "$1" = "help" ]; then
