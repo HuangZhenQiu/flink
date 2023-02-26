@@ -124,6 +124,17 @@ public class JsonPlanGenerator {
                 gen.writeStringField("operator", operator);
                 gen.writeStringField("operator_strategy", operatorDescr);
                 gen.writeStringField("description", description);
+                if (vertex.getOperatorMetadata() != null) {
+                    gen.writeArrayFieldStart("operator_metadata");
+                    for (Map<String, String> metadata : vertex.getOperatorMetadata()) {
+                        gen.writeStartObject();
+                        for (Map.Entry<String, String> e : metadata.entrySet()) {
+                            gen.writeStringField(e.getKey(), e.getValue());
+                        }
+                        gen.writeEndObject();
+                    }
+                    gen.writeEndArray();
+                }
 
                 if (!vertex.isInputVertex()) {
                     // write the input edge properties

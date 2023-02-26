@@ -620,6 +620,11 @@ public class StreamGraphGenerator {
                 transform.getManagedMemoryOperatorScopeUseCaseWeights(),
                 transform.getManagedMemorySlotScopeUseCases());
 
+        StreamNode node = streamGraph.getStreamNode(transform.getId());
+        if (node != null) {
+            node.setMetadata(transform.getMetadata());
+        }
+
         return transformedIds;
     }
 

@@ -155,6 +155,8 @@ public class JobVertex implements java.io.Serializable {
     /** Indicates whether this job vertex contains sink operators. */
     private boolean containsSinkOperators = false;
 
+    private List<Map<String, String>> operatorMetadata = new ArrayList<>();
+
     // --------------------------------------------------------------------------------------------
 
     /**
@@ -572,6 +574,14 @@ public class JobVertex implements java.io.Serializable {
      * @throws Exception The method may throw exceptions which cause the job to fail immediately.
      */
     public void finalizeOnMaster(InitializeOnMasterContext context) throws Exception {}
+
+    public List<Map<String, String>> getOperatorMetadata() {
+        return operatorMetadata;
+    }
+
+    public void setOperatorMetadata(List<Map<String, String>> operatorMetadata) {
+        this.operatorMetadata = operatorMetadata;
+    }
 
     public interface InitializeOnMasterContext {
         /** The class loader for user defined code. */

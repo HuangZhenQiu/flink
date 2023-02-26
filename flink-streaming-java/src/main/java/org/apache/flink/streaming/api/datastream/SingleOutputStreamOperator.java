@@ -101,6 +101,16 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
         return this;
     }
 
+    public SingleOutputStreamOperator<T> setMetadata(Map<String, String> metadata) {
+        transformation.setMetadata(metadata);
+        return this;
+    }
+
+    public SingleOutputStreamOperator<T> addMetadata(String k, String v) {
+        transformation.addMetadata(k, v);
+        return this;
+    }
+
     /**
      * Sets an user provided hash for this operator. This will be used AS IS the create the
      * JobVertexID.

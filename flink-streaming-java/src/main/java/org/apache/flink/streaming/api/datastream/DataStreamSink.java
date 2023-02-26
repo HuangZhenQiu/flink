@@ -33,6 +33,8 @@ import org.apache.flink.streaming.api.transformations.PhysicalTransformation;
 import org.apache.flink.streaming.api.transformations.SinkTransformation;
 import org.apache.flink.streaming.api.transformations.SinkV1Adapter;
 
+import java.util.Map;
+
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
@@ -132,6 +134,16 @@ public class DataStreamSink<T> {
     @PublicEvolving
     public DataStreamSink<T> uid(String uid) {
         transformation.setUid(uid);
+        return this;
+    }
+
+    public DataStreamSink<T> setMetadata(Map<String, String> metadata) {
+        transformation.setMetadata(metadata);
+        return this;
+    }
+
+    public DataStreamSink<T> addMetadata(String k, String v) {
+        transformation.addMetadata(k, v);
         return this;
     }
 

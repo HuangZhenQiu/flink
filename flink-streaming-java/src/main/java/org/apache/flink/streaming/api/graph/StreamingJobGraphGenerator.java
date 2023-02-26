@@ -643,7 +643,8 @@ public class StreamingJobGraphGenerator {
             List<StreamEdge> chainableOutputs = new ArrayList<StreamEdge>();
             List<StreamEdge> nonChainableOutputs = new ArrayList<StreamEdge>();
 
-            StreamNode currentNode = streamGraph.getStreamNode(currentNodeId);
+            StreamNode streamNode = streamGraph.getStreamNode(currentNodeId);
+            StreamNode currentNode = streamNode;
 
             for (StreamEdge outEdge : currentNode.getOutEdges()) {
                 if (isChainable(outEdge, streamGraph)) {
@@ -686,9 +687,7 @@ public class StreamingJobGraphGenerator {
                     createChainedPreferredResources(currentNodeId, chainableOutputs));
 
             OperatorID currentOperatorId =
-                    chainInfo.addNodeToChain(
-                            currentNodeId,
-                            streamGraph.getStreamNode(currentNodeId).getOperatorName());
+                    chainInfo.addNodeToChain(currentNodeId, streamNode.getOperatorName());
 
             if (currentNode.getInputFormat() != null) {
                 getOrCreateFormatContainer(startNodeId)
@@ -716,7 +715,7 @@ public class StreamingJobGraphGenerator {
 
                 config.setChainStart();
                 config.setChainIndex(chainIndex);
-                config.setOperatorName(streamGraph.getStreamNode(currentNodeId).getOperatorName());
+                config.setOperatorName(streamNode.getOperatorName());
 
                 LinkedHashSet<NonChainedOutput> transitiveOutputs = new LinkedHashSet<>();
                 for (StreamEdge edge : transitiveOutEdges) {
@@ -734,7 +733,7 @@ public class StreamingJobGraphGenerator {
                         startNodeId, k -> new HashMap<Integer, StreamConfig>());
 
                 config.setChainIndex(chainIndex);
-                StreamNode node = streamGraph.getStreamNode(currentNodeId);
+                StreamNode node = streamNode;
                 config.setOperatorName(node.getOperatorName());
                 chainedConfigs.get(startNodeId).put(currentNodeId, config);
             }
@@ -842,6 +841,7 @@ public class StreamingJobGraphGenerator {
         } else {
             jobVertex = new JobVertex(chainedNames.get(streamNodeId), jobVertexId, operatorIDPairs);
         }
+        jobVertex.setOperatorMetadata(chainInfo.getChainedOperatorMetadata(streamNodeId));
 
         if (streamNode.getConsumeClusterDatasetId() != null) {
             jobVertex.addIntermediateDataSetIdToConsume(streamNode.getConsumeClusterDatasetId());
@@ -1806,6 +1806,7 @@ public class StreamingJobGraphGenerator {
         private final Map<Integer, ChainedSourceInfo> chainedSources;
         private final List<OperatorCoordinator.Provider> coordinatorProviders;
         private final StreamGraph streamGraph;
+        private final Map<Integer, List<Map<String, String>>> chainedOperatorMetadata;
 
         private OperatorChainInfo(
                 int startNodeId,
@@ -1820,6 +1821,7 @@ public class StreamingJobGraphGenerator {
             this.coordinatorProviders = new ArrayList<>();
             this.chainedSources = chainedSources;
             this.streamGraph = streamGraph;
+            this.chainedOperatorMetadata = new HashMap<>();
         }
 
         byte[] getHash(Integer streamNodeId) {
@@ -1846,6 +1848,10 @@ public class StreamingJobGraphGenerator {
             return chainedSources;
         }
 
+        List<Map<String, String>> getChainedOperatorMetadata(Integer nodeId) {
+            return chainedOperatorMetadata.get(nodeId);
+        }
+
         private OperatorID addNodeToChain(int currentNodeId, String operatorName) {
             List<Tuple2<byte[], byte[]>> operatorHashes =
                     chainedOperatorHashes.computeIfAbsent(startNodeId, k -> new ArrayList<>());
@@ -1855,6 +1861,10 @@ public class StreamingJobGraphGenerator {
             for (Map<Integer, byte[]> legacyHash : legacyHashes) {
                 operatorHashes.add(new Tuple2<>(primaryHashBytes, legacyHash.get(currentNodeId)));
             }
+
+            chainedOperatorMetadata
+                    .computeIfAbsent(startNodeId, k -> new ArrayList<>())
+                    .add(streamGraph.getStreamNode(currentNodeId).getMetadata());
 
             streamGraph
                     .getStreamNode(currentNodeId)

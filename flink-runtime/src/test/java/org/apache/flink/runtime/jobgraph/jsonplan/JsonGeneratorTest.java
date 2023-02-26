@@ -27,6 +27,9 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.operators.testutils.DummyInvokable;
 import org.apache.flink.util.jackson.JacksonMapperFactory;
 
+import org.apache.flink.shaded.guava30.com.google.common.collect.ImmutableList;
+import org.apache.flink.shaded.guava30.com.google.common.collect.ImmutableMap;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.TextNode;
@@ -34,6 +37,8 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.Text
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -60,6 +65,9 @@ public class JsonGeneratorTest {
 
             JobVertex sink1 = new JobVertex("sink 1");
             JobVertex sink2 = new JobVertex("sink 2");
+            List<Map<String, String>> meta =
+                    ImmutableList.of(ImmutableMap.of("a", "b"), ImmutableMap.of("c", "d"));
+            sink2.setOperatorMetadata(meta);
 
             intermediate1.connectNewDataSetAsInput(
                     source1, DistributionPattern.POINTWISE, ResultPartitionType.PIPELINED);
@@ -121,6 +129,20 @@ public class JsonGeneratorTest {
                                 || description.startsWith("sink")
                                 || description.startsWith("intermediate")
                                 || description.startsWith("join"));
+
+                if (description.startsWith("sink 2")) {
+                    assertEquals(
+                            meta,
+                            m.convertValue(
+                                    next.get("operator_metadata"),
+                                    new TypeReference<List<Map<String, String>>>() {}));
+                } else {
+                    List<Map<String, String>> metadata =
+                            m.convertValue(
+                                    next.get("operator_metadata"),
+                                    new TypeReference<List<Map<String, String>>>() {});
+                    metadata.forEach(map -> assertTrue(map.isEmpty()));
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -118,6 +118,7 @@ public abstract class SimpleTransformationTranslator<OUT, T extends Transformati
 
         final StreamNode streamNode = streamGraph.getStreamNode(transformationId);
         if (streamNode != null) {
+            streamNode.setMetadata(transformation.getMetadata());
             validateUseCaseWeightsNotConflict(
                     streamNode.getManagedMemoryOperatorScopeUseCaseWeights(),
                     transformation.getManagedMemoryOperatorScopeUseCaseWeights());

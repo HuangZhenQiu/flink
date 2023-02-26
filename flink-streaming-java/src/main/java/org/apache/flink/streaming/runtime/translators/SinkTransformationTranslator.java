@@ -47,8 +47,10 @@ import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -322,6 +324,10 @@ public class SinkTransformationTranslator<Input, Output>
                     // from the sinkTransformation.
                     subTransformation.setParallelism(transformation.getParallelism());
                 }
+
+                Map<String, String> metadata = new HashMap<>(transformation.getMetadata());
+                metadata.putAll(subTransformation.getMetadata());
+                subTransformation.setMetadata(metadata);
 
                 if (subTransformation.getMaxParallelism() < 0
                         && transformation.getMaxParallelism() > 0) {

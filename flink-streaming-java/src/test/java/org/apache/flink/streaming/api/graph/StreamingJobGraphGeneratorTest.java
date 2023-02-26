@@ -105,6 +105,8 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.TestLoggerExtension;
 
+import org.apache.flink.shaded.guava30.com.google.common.collect.ImmutableList;
+import org.apache.flink.shaded.guava30.com.google.common.collect.ImmutableMap;
 import org.apache.flink.shaded.guava30.com.google.common.collect.Iterables;
 
 import org.assertj.core.api.Assertions;
@@ -1731,6 +1733,27 @@ class StreamingJobGraphGeneratorTest {
         assertThatThrownBy(() -> StreamingJobGraphGenerator.createJobGraph(streamGraph))
                 .hasRootCauseInstanceOf(IOException.class)
                 .hasRootCauseMessage("This provider is not serializable.");
+    }
+
+    @Test
+    void testMetadata() {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.fromSequence(0, 1)
+                .filter(t -> true)
+                .setMetadata(ImmutableMap.of("m2", "v2", "m3", "v3"))
+                .shuffle()
+                .addSink(new DiscardingSink<>())
+                .addMetadata("m1", "v1");
+
+        JobGraph jobGraph = StreamingJobGraphGenerator.createJobGraph(env.getStreamGraph());
+        List<JobVertex> allVertices = jobGraph.getVerticesSortedTopologicallyFromSources();
+
+        assertThat(allVertices.get(0).getOperatorMetadata())
+                .isEqualTo(
+                        ImmutableList.of(
+                                ImmutableMap.of("m2", "v2", "m3", "v3"), ImmutableMap.of()));
+        assertThat(allVertices.get(1).getOperatorMetadata())
+                .isEqualTo(ImmutableList.of(ImmutableMap.of("m1", "v1")));
     }
 
     private static class SerializationTestOperatorFactory

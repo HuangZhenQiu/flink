@@ -28,6 +28,8 @@ import org.apache.flink.api.java.typeutils.MissingTypeInfo;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
 import org.apache.flink.util.Preconditions;
 
+import org.apache.commons.collections.map.UnmodifiableMap;
+
 import javax.annotation.Nullable;
 
 import java.util.Collections;
@@ -173,6 +175,8 @@ public abstract class Transformation<T> {
     private Optional<SlotSharingGroup> slotSharingGroup;
 
     @Nullable private String coLocationGroupKey;
+
+    private Map<String, String> metadata = new HashMap<>();
 
     /**
      * Creates a new {@code Transformation} with the given name, output type and parallelism.
@@ -601,5 +605,17 @@ public abstract class Transformation<T> {
         result = 31 * result + parallelism;
         result = 31 * result + (int) (bufferTimeout ^ (bufferTimeout >>> 32));
         return result;
+    }
+
+    public Map<String, String> getMetadata() {
+        return UnmodifiableMap.decorate(metadata);
+    }
+
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = new HashMap<>(Preconditions.checkNotNull(metadata));
+    }
+
+    public void addMetadata(String k, String v) {
+        this.metadata.put(k, v);
     }
 }

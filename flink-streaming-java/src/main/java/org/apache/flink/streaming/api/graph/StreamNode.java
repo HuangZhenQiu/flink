@@ -93,6 +93,8 @@ public class StreamNode {
 
     private @Nullable IntermediateDataSetID consumeClusterDatasetId;
 
+    private Map<String, String> metadata;
+
     @VisibleForTesting
     public StreamNode(
             Integer id,
@@ -417,5 +419,13 @@ public class StreamNode {
     public void setConsumeClusterDatasetId(
             @Nullable IntermediateDataSetID consumeClusterDatasetId) {
         this.consumeClusterDatasetId = consumeClusterDatasetId;
+    }
+
+    public Map<String, String> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = metadata;
     }
 }
