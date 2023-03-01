@@ -323,16 +323,22 @@ public class ApplicationDispatcherBootstrap implements DispatcherBootstrap {
                 final JobID jobId = maybeDuplicate.get().getJobID();
                 tolerateMissingResult.add(jobId);
                 jobIdsFuture.complete(Collections.singletonList(jobId));
-            } else if (submitFailedJobOnApplicationError && applicationJobIds.isEmpty()) {
-                final JobID failedJobId =
-                        JobID.fromHexString(
-                                configuration.get(PipelineOptionsInternal.PIPELINE_FIXED_JOB_ID));
-                dispatcherGateway
-                        .submitFailedJob(failedJobId, FAILED_JOB_NAME, t)
-                        .thenAccept(
-                                ignored ->
-                                        jobIdsFuture.complete(
-                                                Collections.singletonList(failedJobId)));
+            } else if (submitFailedJobOnApplicationError) {
+                if (applicationJobIds.isEmpty()) {
+                    // Main method error before submission
+                    final JobID failedJobId =
+                            JobID.fromHexString(
+                                    configuration.get(
+                                            PipelineOptionsInternal.PIPELINE_FIXED_JOB_ID));
+                    dispatcherGateway
+                            .submitFailedJob(failedJobId, FAILED_JOB_NAME, t)
+                            .thenAccept(
+                                    ignored ->
+                                            jobIdsFuture.complete(
+                                                    Collections.singletonList(failedJobId)));
+                } else {
+                    LOG.warn("Encountered error after application submission", t);
+                }
             } else {
                 jobIdsFuture.completeExceptionally(
                         new ApplicationExecutionException("Could not execute application.", t));

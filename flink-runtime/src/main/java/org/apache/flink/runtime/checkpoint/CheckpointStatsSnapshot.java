@@ -39,7 +39,7 @@ public class CheckpointStatsSnapshot implements Serializable {
     private final CheckpointStatsHistory history;
 
     /** The latest restored checkpoint operation. */
-    @Nullable private final RestoredCheckpointStats latestRestoredCheckpoint;
+    @Nullable private RestoredCheckpointStats latestRestoredCheckpoint;
 
     public static CheckpointStatsSnapshot empty() {
         return new CheckpointStatsSnapshot(
@@ -104,5 +104,10 @@ public class CheckpointStatsSnapshot implements Serializable {
     @Nullable
     public RestoredCheckpointStats getLatestRestoredCheckpoint() {
         return latestRestoredCheckpoint;
+    }
+
+    public void setLatestRestoredCheckpoint(
+            @Nullable RestoredCheckpointStats latestRestoredCheckpoint) {
+        this.latestRestoredCheckpoint = latestRestoredCheckpoint;
     }
 }

@@ -75,6 +75,7 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -98,6 +99,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class CheckpointCoordinator {
 
     private static final Logger LOG = LoggerFactory.getLogger(CheckpointCoordinator.class);
+
+    public static final Map<JobID, RestoredCheckpointStats> RESTORED_CHECKPOINT_STATS =
+            new ConcurrentHashMap<>();
 
     /** The number of recent checkpoints whose IDs are remembered. */
     private static final int NUM_GHOST_CHECKPOINT_IDS = 16;
@@ -1682,6 +1686,14 @@ public class CheckpointCoordinator {
 
             LOG.info("Restoring job {} from {}.", job, latest);
 
+            RestoredCheckpointStats restored =
+                    new RestoredCheckpointStats(
+                            latest.getCheckpointID(),
+                            latest.getProperties(),
+                            System.currentTimeMillis(),
+                            latest.getExternalPointer());
+            RESTORED_CHECKPOINT_STATS.put(job, restored);
+
             this.forceFullSnapshot = latest.getProperties().isUnclaimed();
 
             // re-assign the task states
@@ -1716,14 +1728,6 @@ public class CheckpointCoordinator {
             }
 
             // update metrics
-
-            long restoreTimestamp = System.currentTimeMillis();
-            RestoredCheckpointStats restored =
-                    new RestoredCheckpointStats(
-                            latest.getCheckpointID(),
-                            latest.getProperties(),
-                            restoreTimestamp,
-                            latest.getExternalPointer());
 
             statsTracker.reportRestoredCheckpoint(restored);
 
@@ -1799,6 +1803,11 @@ public class CheckpointCoordinator {
             default:
                 throw new IllegalArgumentException("Unknown snapshot restore mode");
         }
+
+        RestoredCheckpointStats restored =
+                new RestoredCheckpointStats(
+                        0L, checkpointProperties, System.currentTimeMillis(), savepointPointer);
+        RESTORED_CHECKPOINT_STATS.put(job, restored);
 
         // Load the savepoint as a checkpoint into the system
         CompletedCheckpoint savepoint =

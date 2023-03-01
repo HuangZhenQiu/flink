@@ -44,6 +44,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import static org.apache.flink.runtime.checkpoint.CheckpointCoordinator.RESTORED_CHECKPOINT_STATS;
+
 /** An archived execution graph represents a serializable form of an {@link ExecutionGraph}. */
 public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializable {
 
@@ -383,6 +385,9 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
             timestamps[jobStatus.ordinal()] = failureTime;
         }
 
+        CheckpointStatsSnapshot checkpointStatsSnapshot = CheckpointStatsSnapshot.empty();
+        checkpointStatsSnapshot.setLatestRestoredCheckpoint(RESTORED_CHECKPOINT_STATS.get(jobId));
+
         return new ArchivedExecutionGraph(
                 jobId,
                 jobName,
@@ -399,7 +404,7 @@ public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializabl
                 checkpointingSettings == null
                         ? null
                         : checkpointingSettings.getCheckpointCoordinatorConfiguration(),
-                checkpointingSettings == null ? null : CheckpointStatsSnapshot.empty(),
+                checkpointStatsSnapshot,
                 checkpointingSettings == null ? null : "Unknown",
                 checkpointingSettings == null ? null : "Unknown",
                 checkpointingSettings == null
