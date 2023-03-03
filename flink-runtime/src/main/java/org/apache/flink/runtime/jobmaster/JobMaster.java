@@ -119,6 +119,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -186,6 +187,8 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
     private final Map<ResourceID, TaskManagerRegistration> registeredTaskManagers;
 
     private final ShuffleMaster<?> shuffleMaster;
+
+    private final Set<ResourceID> blockedResourceIds = ConcurrentHashMap.newKeySet();
 
     // --------- Scheduler --------
 
@@ -747,6 +750,14 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
         final UUID sessionId = taskManagerRegistrationInformation.getTaskManagerSession();
         final TaskManagerRegistration taskManagerRegistration =
                 registeredTaskManagers.get(taskManagerId);
+
+        log.info("Registering TaskManager with id {}", taskManagerId);
+
+        if (blockedResourceIds.contains(resourceId)) {
+            log.warn("Rejecting TaskManager registration attempt because it is blocked.");
+            return CompletableFuture.completedFuture(
+                    new JMTMRegistrationRejection("TaskManager is blocked from registration."));
+        }
 
         if (taskManagerRegistration != null) {
             if (taskManagerRegistration.getSessionId().equals(sessionId)) {
@@ -1437,6 +1448,9 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId>
 
         private void handleTaskManagerConnectionLoss(ResourceID resourceID, Exception cause) {
             validateRunsInMainThread();
+            if (jobMasterConfiguration.getConfiguration().get(JobManagerOptions.BLOCK_LOST_TMS)) {
+                blockedResourceIds.add(resourceID);
+            }
             disconnectTaskManager(resourceID, cause);
         }
 

@@ -662,6 +662,17 @@ public class JobManagerOptions {
                             "Flag indicating whether to enable the slot allocation optimization for DefaultScheduler and AdaptiveScheduler. "
                                     + "It will distribute subtasks across as many TaskManagers as possible.");
 
+    @Documentation.Section({
+        Documentation.Sections.EXPERT_SCHEDULING,
+        Documentation.Sections.ALL_JOB_MANAGER
+    })
+    public static final ConfigOption<Boolean> BLOCK_LOST_TMS =
+            key("jobmanager.block-lost-taskmanagers")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Flag indicating whether lost taskmanagers (heartbeat) should be blocked from reconnecting.");
+
     // ---------------------------------------------------------------------------------------------
 
     private JobManagerOptions() {
