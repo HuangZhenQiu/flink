@@ -4,6 +4,7 @@ timeout: 120
 pipelines:
   # Pipeline to build Flink from Apple branch.
   - name: publish-release-1.16-acs
+    group: publish-release
     branchName: release-1.16-acs
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
@@ -46,6 +47,7 @@ pipelines:
             - repo: docker.apple.com/acs-flink/flink-hadoop
 
   - name: binary-release-1.16-acs
+    group: binary-release
     branchName: release-1.16-acs
     machine:
       baseImage: docker.apple.com/thomas-weise/flink-ci:latest
@@ -70,6 +72,7 @@ pipelines:
             - repo: oss-patched-binaries-local
 
   - name: pull-request-release-1.16-acs
+    group: pull-request
     branchName: release-1.16-acs
     timeout: 600
     machine:
@@ -80,3 +83,54 @@ pipelines:
         - cd /workspace
         - rm -rf .staged-artifacts
         - mvn clean package -Phive-3.1.3.0-apple,s3-plugin -Dscala-2.12 -Dmaven.test.failure.ignore=true
+
+  - name: publish-release-1.16-acs-graviton
+    group: graviton
+    branchName: release-1.16-acs
+    machine:
+      baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+      executor:
+        type: tekton
+      env:
+        DOCKER_BUILDKIT: "1"
+        HTTP_PROXY: "http://proxy.config.pcp.local:3128"
+        HTTPS_PROXY: "http://proxy.config.pcp.local:3128"
+        http_proxy: "http://proxy.config.pcp.local:3128"
+        https_proxy: "http://proxy.config.pcp.local:3128"
+        NO_PROXY: "localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
+        no_proxy: "localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
+    build:
+      template: freestyle:v4:publish
+      steps:
+        - cd /workspace
+        - rm -rf .staged-artifacts
+        - mvn clean deploy -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
+        # see https://docs.aci.apple.com/rio/guide-to-rio/package-and-publish/freeform.html
+        # must exclude maven-metadata.xml
+        - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
+        # Prepare for docker image build
+        - pushd flink-dist/target/flink-*-bin/; tar czf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/; popd
+        - pushd /workspace/apple/docker; wget https://artifacts.apple.com/artifactory/oss-patched-binaries-local/org/apache/hadoop/3.3.3.2-apple/hadoop-3.3.3.2-apple.tar.gz; popd
+    package:
+      # enable for release (non -SNAPSHOT) builds
+      # release: true
+      freeform:
+        - publish:
+            - repo: m2:oss-patched
+      dockerfile:
+        - dockerfilePath: apple/docker/Dockerfile
+          target: base
+          context: apple/docker/
+          perApplication: false
+          version: "1.16.1-acs-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "1.16-acs-latest", "1.16.1-acs-latest" ]
+          publish:
+            - repo: docker.apple.com/acs-flink/flink-graviton
+        - dockerfilePath: apple/docker/Dockerfile
+          target: hadoop
+          context: apple/docker/
+          perApplication: false
+          version: "1.16.1-acs-r${RIO_BUILD_NUMBER}"
+          extraTags: [ "1.16-acs-latest", "1.16.1-acs-latest" ]
+          publish:
+            - repo: docker.apple.com/acs-flink/flink-hadoop-graviton

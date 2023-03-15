@@ -1,5 +1,12 @@
 FROM docker.apple.com/base-images/ubi8/ubi AS builder
 
+ARG HTTP_PROXY="http://proxy.config.pcp.local:3128"
+ARG HTTPS_PROXY="http://proxy.config.pcp.local:3128"
+ARG http_proxy="http://proxy.config.pcp.local:3128"
+ARG https_proxy="http://proxy.config.pcp.local:3128"
+ARG NO_PROXY="localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
+ARG no_proxy="localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
+
 # Env vars are not shared between stages
 ENV FLINK_HOME=/opt/flink
 ENV HADOOP_VERSION 3.3.3
