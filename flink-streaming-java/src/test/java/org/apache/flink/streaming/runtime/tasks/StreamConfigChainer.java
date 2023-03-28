@@ -23,6 +23,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.streaming.api.graph.NonChainedOutput;
 import org.apache.flink.streaming.api.graph.StreamConfig;
@@ -49,6 +50,8 @@ import static org.apache.flink.util.Preconditions.checkState;
 /** Helper class to build StreamConfig for chain of operators. */
 public class StreamConfigChainer<OWNER> {
     public static final int MAIN_NODE_ID = 0;
+
+    public static final JobVertexID TARGET_VERTEX_ID = new JobVertexID();
     private final OWNER owner;
     private final StreamConfig headConfig;
     private final Map<Integer, StreamConfig> chainedConfigs = new HashMap<>();
@@ -187,6 +190,7 @@ public class StreamConfigChainer<OWNER> {
                             null,
                             new BroadcastPartitioner<>(),
                             ResultPartitionType.PIPELINED_BOUNDED);
+            streamOutput.setTargetVertexId(TARGET_VERTEX_ID);
             outEdgesInOrder.add(streamOutput);
         }
 

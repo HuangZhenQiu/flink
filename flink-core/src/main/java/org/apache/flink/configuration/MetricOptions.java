@@ -320,6 +320,14 @@ public class MetricOptions {
                     .withDescription(
                             "Flag indicating whether Flink should report system resource metrics such as machine's CPU,"
                                     + " memory or network usage.");
+
+    /** Whether Flink should report target vertex level output record metrics. */
+    public static final ConfigOption<Boolean> PER_VERTEX_OUTPUT_METRICS_ENABLED =
+            key("metrics.per-vertex-output.enabled")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Flag indicating whether Flink should report per vertex output record metrics.");
     /**
      * Interval between probing of system resource metrics specified in milliseconds. Has an effect
      * only when {@link #SYSTEM_RESOURCE_METRICS} is enabled.

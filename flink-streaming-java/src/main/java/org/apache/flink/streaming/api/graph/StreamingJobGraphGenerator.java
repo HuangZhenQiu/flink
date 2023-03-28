@@ -1154,6 +1154,7 @@ public class StreamingJobGraphGenerator {
 
         JobVertex headVertex = jobVertices.get(headOfChain);
         JobVertex downStreamVertex = jobVertices.get(downStreamVertexID);
+        output.setTargetVertexId(downStreamVertex.getID());
 
         StreamConfig downStreamConfig = new StreamConfig(downStreamVertex.getConfiguration());
 

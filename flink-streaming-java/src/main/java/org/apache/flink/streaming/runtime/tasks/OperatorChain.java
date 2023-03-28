@@ -21,6 +21,8 @@ package org.apache.flink.streaming.runtime.tasks;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.MetricOptions;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
@@ -36,6 +38,7 @@ import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricNames;
+import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.runtime.operators.coordination.AcknowledgeCheckpointEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEventDispatcher;
@@ -508,15 +511,31 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             Map<Integer, StreamConfig> chainedConfigs,
             StreamTask<OUT, OP> containingTask,
             Map<IntermediateDataSetID, RecordWriterOutput<?>> recordWriterOutputs) {
+
+        TaskIOMetricGroup ioMetricGroup =
+                containingTask.getEnvironment().getMetricGroup().getIOMetricGroup();
+        boolean vertexOutputMetricsEnabled =
+                containingTask
+                        .getEnvironment()
+                        .getTaskManagerInfo()
+                        .getConfiguration()
+                        .get(MetricOptions.PER_VERTEX_OUTPUT_METRICS_ENABLED);
+
         for (int i = 0; i < outputsInOrder.size(); ++i) {
             NonChainedOutput output = outputsInOrder.get(i);
 
+            Counter vertexOutputCounter =
+                    vertexOutputMetricsEnabled && output.getTargetVertexId() != null
+                            ? ioMetricGroup.getNumRecordsOutCounterForTargetVertex(
+                                    output.getTargetVertexId())
+                            : null;
             RecordWriterOutput<?> recordWriterOutput =
                     createStreamOutput(
                             recordWriterDelegate.getRecordWriter(i),
                             output,
                             chainedConfigs.get(output.getSourceNodeId()),
-                            containingTask.getEnvironment());
+                            containingTask.getEnvironment(),
+                            vertexOutputCounter);
 
             this.streamOutputs[i] = recordWriterOutput;
             recordWriterOutputs.put(output.getDataSetId(), recordWriterOutput);
@@ -527,7 +546,8 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             RecordWriter<SerializationDelegate<StreamRecord<OUT>>> recordWriter,
             NonChainedOutput streamOutput,
             StreamConfig upStreamConfig,
-            Environment taskEnvironment) {
+            Environment taskEnvironment,
+            Counter numRecordsOut) {
         OutputTag sideOutputTag =
                 streamOutput.getOutputTag(); // OutputTag, return null if not sideOutput
 
@@ -551,7 +571,8 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                         recordWriter,
                         outSerializer,
                         sideOutputTag,
-                        streamOutput.supportsUnalignedCheckpoints()));
+                        streamOutput.supportsUnalignedCheckpoints(),
+                        numRecordsOut));
     }
 
     @SuppressWarnings("rawtypes")

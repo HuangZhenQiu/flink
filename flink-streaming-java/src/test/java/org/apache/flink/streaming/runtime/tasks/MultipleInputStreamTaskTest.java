@@ -36,6 +36,8 @@ import org.apache.flink.api.connector.source.mocks.MockSource;
 import org.apache.flink.api.connector.source.mocks.MockSourceReader;
 import org.apache.flink.api.connector.source.mocks.MockSourceSplit;
 import org.apache.flink.api.connector.source.mocks.MockSourceSplitSerializer;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.MetricOptions;
 import org.apache.flink.core.execution.SavepointFormatType;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
@@ -72,6 +74,7 @@ import org.apache.flink.runtime.source.event.NoMoreSplitsEvent;
 import org.apache.flink.runtime.state.CheckpointStorageLocationReference;
 import org.apache.flink.runtime.taskmanager.CheckpointResponder;
 import org.apache.flink.runtime.taskmanager.TestCheckpointResponder;
+import org.apache.flink.runtime.util.TestingTaskManagerRuntimeInfo;
 import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.AbstractInput;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
@@ -415,11 +418,15 @@ public class MultipleInputStreamTaskTest {
                     }
                 };
 
+        Configuration conf = new Configuration();
+        conf.set(MetricOptions.PER_VERTEX_OUTPUT_METRICS_ENABLED, true);
+
         String mainOperatorName = "MainOperator";
         try (StreamTaskMailboxTestHarness<String> testHarness =
                 new StreamTaskMailboxTestHarnessBuilder<>(
                                 MultipleInputStreamTask::new, BasicTypeInfo.STRING_TYPE_INFO)
                         .modifyExecutionConfig(applyObjectReuse(objectReuse))
+                        .setTaskManagerRuntimeInfo(new TestingTaskManagerRuntimeInfo(conf))
                         .addInput(BasicTypeInfo.STRING_TYPE_INFO)
                         .addSourceInput(
                                 new SourceOperatorFactory<>(
@@ -477,6 +484,13 @@ public class MultipleInputStreamTaskTest {
             assertEquals(
                     mainOperatorRecordsIn,
                     mainOperatorMetrics.getIOMetricGroup().getNumRecordsInCounter().getCount());
+            assertEquals(
+                    totalRecordsOut,
+                    taskMetricGroup
+                            .getIOMetricGroup()
+                            .getNumRecordsOutCounterForTargetVertex(
+                                    StreamConfigChainer.TARGET_VERTEX_ID)
+                            .getCount());
             assertEquals(networkRecordsIn, numRecordsInCounter.getCount());
             assertEquals(totalRecordsOut, numRecordsOutCounter.getCount());
             testHarness.waitForTaskCompletion();

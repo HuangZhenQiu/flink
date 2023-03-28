@@ -23,9 +23,11 @@ import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Histogram;
 import org.apache.flink.metrics.Meter;
 import org.apache.flink.metrics.MeterView;
+import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.runtime.executiongraph.IOMetrics;
 import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.DescriptiveStatisticsHistogram;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.TimerGauge;
@@ -73,6 +75,8 @@ public class TaskIOMetricGroup extends ProxyMetricGroup<TaskMetricGroup> {
 
     private final Map<IntermediateResultPartitionID, Counter> numBytesProducedOfPartitions =
             new HashMap<>();
+
+    private final Map<JobVertexID, Counter> numRecordPerTargetVertex = new HashMap<>();
 
     public TaskIOMetricGroup(TaskMetricGroup parent) {
         super(parent);
@@ -225,6 +229,17 @@ public class TaskIOMetricGroup extends ProxyMetricGroup<TaskMetricGroup> {
 
     public Gauge<Integer> getMailboxSize() {
         return mailboxSize;
+    }
+
+    public Counter getNumRecordsOutCounterForTargetVertex(JobVertexID jobVertexID) {
+        return numRecordPerTargetVertex.computeIfAbsent(
+                jobVertexID,
+                jvi -> {
+                    MetricGroup jviGroup = addGroup("targetVertex", jvi.toHexString());
+                    Counter c = jviGroup.counter(MetricNames.IO_NUM_RECORDS_OUT);
+                    jviGroup.meter(MetricNames.IO_NUM_RECORDS_OUT_RATE, new MeterView(c));
+                    return c;
+                });
     }
 
     // ============================================================================================

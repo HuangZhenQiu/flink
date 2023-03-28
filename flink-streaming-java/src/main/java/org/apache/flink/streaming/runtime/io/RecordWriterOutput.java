@@ -19,6 +19,7 @@ package org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.event.AbstractEvent;
@@ -57,12 +58,16 @@ public class RecordWriterOutput<OUT> implements WatermarkGaugeExposingOutput<Str
 
     private WatermarkStatus announcedStatus = WatermarkStatus.ACTIVE;
 
+    private final Counter outputCounter;
+
     @SuppressWarnings("unchecked")
     public RecordWriterOutput(
             RecordWriter<SerializationDelegate<StreamRecord<OUT>>> recordWriter,
             TypeSerializer<OUT> outSerializer,
             OutputTag outputTag,
-            boolean supportsUnalignedCheckpoints) {
+            boolean supportsUnalignedCheckpoints,
+            Counter outputCounter) {
+        this.outputCounter = outputCounter;
 
         checkNotNull(recordWriter);
         this.outputTag = outputTag;
@@ -99,6 +104,9 @@ public class RecordWriterOutput<OUT> implements WatermarkGaugeExposingOutput<Str
     }
 
     private <X> void pushToRecordWriter(StreamRecord<X> record) {
+        if (outputCounter != null) {
+            outputCounter.inc();
+        }
         serializationDelegate.setInstance(record);
 
         try {

@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.graph;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
 import org.apache.flink.util.OutputTag;
 
@@ -63,6 +64,8 @@ public class NonChainedOutput implements Serializable {
 
     /** Target {@link ResultPartitionType}. */
     private final ResultPartitionType partitionType;
+
+    private JobVertexID targetVertexId;
 
     public NonChainedOutput(
             boolean supportsUnalignedCheckpoints,
@@ -129,6 +132,14 @@ public class NonChainedOutput implements Serializable {
 
     public ResultPartitionType getPartitionType() {
         return partitionType;
+    }
+
+    public JobVertexID getTargetVertexId() {
+        return targetVertexId;
+    }
+
+    public void setTargetVertexId(JobVertexID targetVertexId) {
+        this.targetVertexId = targetVertexId;
     }
 
     @Override
