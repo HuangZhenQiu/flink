@@ -106,11 +106,11 @@ pipelines:
       steps:
         - cd /workspace
         - rm -rf .staged-artifacts
-        - mvn help:effective-settings
         - dnf install -y pip
         - pip install xmlmerge
         - xmlmerge /root/.m2/settings.xml /root/.m2/settings.xml > apple/maven/settingsFinal.xml
-        - mvn -s apple/maven/settingsFinal.xml clean deploy -Dnpm.proxy=http://proxy.config.pcp.local:3128 -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
+        - ./mvnw help:effective-settings
+        - ./mvnw -s apple/maven/settingsFinal.xml clean deploy -Dnpm.proxy=http://proxy.config.pcp.local:3128 -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
         # see https://docs.aci.apple.com/rio/guide-to-rio/package-and-publish/freeform.html
         # must exclude maven-metadata.xml
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
