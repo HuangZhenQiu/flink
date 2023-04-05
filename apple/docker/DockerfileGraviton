@@ -1,4 +1,11 @@
-FROM docker.apple.com/base-images/ubi8/ubi AS builder
+FROM docker.apple.com/base-images/ubi9/java11-builder AS builder
+
+ARG HTTP_PROXY="http://proxy.config.pcp.local:3128"
+ARG HTTPS_PROXY="http://proxy.config.pcp.local:3128"
+ARG http_proxy="http://proxy.config.pcp.local:3128"
+ARG https_proxy="http://proxy.config.pcp.local:3128"
+ARG NO_PROXY="localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
+ARG no_proxy="localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
 
 # Env vars are not shared between stages
 ENV FLINK_HOME=/opt/flink
@@ -17,7 +24,7 @@ RUN mkdir -p $HADOOP_COMMON_HOME
 COPY $HADOOP_TGZ_FILE /tmp/hadoop.tgz
 RUN tar -xf /tmp/hadoop.tgz --strip-components=1 -C $HADOOP_COMMON_HOME
 
-FROM docker.apple.com/base-images/ubi8-minimal/java11-runtime as base
+FROM docker.apple.com/base-images/ubi9-minimal/java11-runtime as base
 
 USER root
 # Install dependencies

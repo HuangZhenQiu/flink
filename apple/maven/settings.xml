@@ -1,0 +1,12 @@
+<settings>
+ 	<proxies>
+ 		<proxy>
+ 			<id>apple-proxy</id>
+ 			<active>true</active>
+ 			<protocol>http</protocol>
+ 			<host>proxy.config.pcp.local</host>
+ 			<port>3128</port>
+ 			<nonProxyHosts>localhost|127.0.0.1,10.100.0.0/16|internal|*.internal|apple.com|*.apple.com</nonProxyHosts>
+ 		</proxy>
+ 	</proxies>
+ </settings>

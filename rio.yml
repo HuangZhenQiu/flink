@@ -88,7 +88,7 @@ pipelines:
     group: graviton
     branchName: release-1.16-acs
     machine:
-      baseImage: docker.apple.com/thomas-weise/flink-ci:latest
+      baseImage: docker.apple.com/base-images/ubi9/java11-builder
       executor:
         type: tekton
       env:
@@ -101,16 +101,23 @@ pipelines:
         no_proxy: "localhost,127.0.0.1,10.100.0.0/16,internal,*.internal,apple.com,*.apple.com"
     build:
       template: freestyle:v4:publish
+      builders:
+        - java-maven-rio
       steps:
         - cd /workspace
         - rm -rf .staged-artifacts
-        - mvn clean deploy -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
+        - mvn help:effective-settings
+        - dnf install -y pip
+        - pip install xmlmerge
+        - xmlmerge /root/.m2/settings.xml /root/.m2/settings.xml > apple/maven/settingsFinal.xml
+        - mvn -s apple/maven/settingsFinal.xml clean deploy -Dnpm.proxy=http://proxy.config.pcp.local:3128 -Dscala-2.12 -Phive-3.1.3.0-apple,s3-plugin,docs-and-source -DskipTests -DaltDeploymentRepository=local-staging::default::file://`pwd`/.staged-artifacts
         # see https://docs.aci.apple.com/rio/guide-to-rio/package-and-publish/freeform.html
         # must exclude maven-metadata.xml
         - ci stage-lib --exclude maven-metadata.xml --exclude *.md5 --exclude *.sha1 --many-many-artifacts ./.staged-artifacts/**
         # Prepare for docker image build
         - pushd flink-dist/target/flink-*-bin/; tar czf flink.tgz flink-*; cp flink.tgz /workspace/apple/docker/; popd
         - pushd /workspace/apple/docker; wget https://artifacts.apple.com/artifactory/oss-patched-binaries-local/org/apache/hadoop/3.3.3.2-apple/hadoop-3.3.3.2-apple.tar.gz; popd
+
     package:
       # enable for release (non -SNAPSHOT) builds
       # release: true
@@ -118,7 +125,7 @@ pipelines:
         - publish:
             - repo: m2:oss-patched
       dockerfile:
-        - dockerfilePath: apple/docker/Dockerfile
+        - dockerfilePath: apple/docker/DockerfileGraviton
           target: base
           context: apple/docker/
           perApplication: false
